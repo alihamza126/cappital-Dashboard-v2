@@ -1,0 +1,31 @@
+.home-card {
+    &:hover .after-title h2::after{
+        width: 15%;
+        
+    }
+    .container{
+
+
+        .card{
+            border: none;
+            border-radius: 9px;
+            margin-top: 1rem;
+            overflow: hidden;
+            box-shadow: rgba(0, 0, 0, 0.19) 0px 10px 20px, rgba(0, 0, 0, 0.068) 0px 6px 6px;
+            
+            @media (max-width:500px) {
+                // transform: scale(.93);
+            }
+
+
+            img{
+            }
+            &:hover {
+                box-shadow: 0px 0px 6px 6px rgba(139, 97, 139, 0.438);
+                cursor: pointer;
+                transition: all .3s ease-in-out;
+                transform:scale(.99);
+            }
+        }
+    }
+}

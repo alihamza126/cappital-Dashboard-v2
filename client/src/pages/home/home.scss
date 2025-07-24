@@ -1,0 +1,25 @@
+.topbar {
+    transition: all 3s ease-in-out;
+  }
+  
+  .topbar-sticky {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    z-index: 999;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1); /* Add shadow effect */
+    animation: slideDown .21s cubic-bezier(0.23, 1, 0.320, 1); /* Add animation */
+    border-radius: 20px;
+    padding: 1px inherit;
+  }
+  
+  @keyframes slideDown {
+    from {
+      transform: translateY(-100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }

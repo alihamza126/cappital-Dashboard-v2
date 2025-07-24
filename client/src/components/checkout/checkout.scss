@@ -1,0 +1,143 @@
+.checkout {
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    min-height: 100vh;
+
+    .card {
+        width: 100%;
+        height: 100%;
+    }
+
+   
+
+    .input-group-redeem {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 5px;
+        gap: 5px;
+
+
+        input {
+            background-color: rgb(255, 255, 255);
+            margin-bottom: none !important;
+            padding: .3rem 1rem;
+        }
+
+        button {
+            outline: none;
+            border: none;
+            padding: .3rem 1rem;
+            border-radius: 4px;
+            background-color: #1757ab;
+            font-weight: 500;
+            color: antiquewhite;
+        }
+    }
+
+    .payopt{
+        box-sizing: border-box;
+        border: 2px solid rgba(128, 128, 128, 0.055);
+        box-shadow: 4px 4px 1px -1px rgba(0,0,0,0.2),0px 1px 1px 0px rgba(0,0,0,0.14),0px 1px 3px 0px rgba(0,0,0,0.12);
+
+        &:hover{
+            transition: all .23s cubic-bezier(0.445, 0.05, 0.55, 0.95);
+            cursor: pointer;
+            transform: scale(1.017);
+            border: 2px solid rgb(1, 133, 1);
+        }
+    }
+
+    .payment-section{
+        margin-top: 2.5rem;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 4px 4px 5px -1px rgba(0,0,0,0.2),0px 1px 1px 0px rgba(0,0,0,0.14),0px 1px 3px 0px rgba(0,0,0,0.12);
+
+
+        .top-row{
+
+
+            .pay-details-col{
+
+                img{
+                    height: 80px !important;
+                    padding: 1rem;
+                }
+                p{
+                font-style: 18px;
+                font-family: 'inter';
+                }
+                .payment-details{
+                    
+                    strong{
+                        
+                    }
+                }
+            }
+            .pay-ss-col{
+                border: 2px rgb(0, 110, 255);
+                border-style:dashed;
+                display: flex;
+                border-radius: 15px;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                margin-top: .2rem;
+                height: 300px;
+
+                img{
+                    height: 190px;
+                    max-width: 80%;
+                    padding: 1rem;
+                }
+
+                .img-upload-input{
+                    
+
+                    label{
+                        padding: 5px 5px;
+                        border-radius: 10px;
+                        background-color: #1757ab;
+                        color: white;
+                        transition: all .21s ease-in-out;
+
+                        &:hover{
+                            transform: scale(1.1);
+                            cursor: pointer;
+                        }
+                    
+
+                        @keyframes blink {
+                            25%{
+                                transform: scale(1.044);
+                            }
+                            50%{
+                                transform: scale(1.14);
+                            }
+                            75%{
+                                transform: scale(1.46);
+                            }
+                            100%{
+                                transform: scale(1.49);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+.glassy-background {
+    background-image: url(/src/assets/bgcheckout.svg);
+    background-size: cover;
+    position: relative;
+    overflow: hidden;
+    background-repeat: no-repeat;
+    border-radius: 3px; /* Adjust border radius as needed */
+}
+  
+  

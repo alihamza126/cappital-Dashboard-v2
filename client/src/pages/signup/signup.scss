@@ -1,0 +1,13 @@
+// Define variables
+$background-image-url: url(../../assets/auth-bg.png);
+$blur-value: 5px;
+
+// Styles for the signup page
+.signup-page {
+    background-image: $background-image-url;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-clip: border-box;
+    background-blend-mode: color-dodge;
+    backdrop-filter: blur($blur-value);
+}

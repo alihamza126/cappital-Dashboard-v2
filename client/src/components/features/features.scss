@@ -1,0 +1,49 @@
+.features {
+
+    .container{
+
+
+        .row{
+
+
+            .feature-card{
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 20px;
+                    border-radius: 14px;
+                    min-height: 140px;
+                    
+                .left{
+                    flex: 1;
+                    border-radius: 50%;
+                    img{
+                            width: 100px;
+                            height: 100px;
+                            transform: scale(1.24);
+                    }
+                }
+                .right{
+                    flex: 3;
+                    strong{
+                        padding-top: 2px;
+                        font-size: 21px;
+                        font-weight: 600;
+                        word-spacing: 4px;
+                        font-family: 'Fredoka';
+                        color: #0A0BAB;
+                        text-transform: capitalize;
+                    }
+                    p{
+                        text-align: start;
+                        font-size: 16px;
+                        font-weight: 400;
+                        padding: 5px 0px;
+                        font-family: "Work Sans";
+                    }
+
+                }
+            }
+        }
+    }
+}

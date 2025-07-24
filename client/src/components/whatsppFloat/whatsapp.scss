@@ -1,0 +1,50 @@
+.whatsapp-float {
+  position: fixed;
+  width: 55px;
+  height: 55px;
+  padding: 3px 4px;
+  bottom: 20px;
+  right: 30px;
+  background-color: #25d366;
+  color: #FFF;
+  border-radius: 50px;
+  text-align: center;
+  z-index: 1000; /* Ensure the icon appears on top of other elements */
+  box-shadow: 3px 2px 15px #666;
+  transition: all .6s ease-in-out;
+  animation: floatAnimation 2s ease-in-out 5s infinite; /* Animation starts after 5 seconds */
+
+  @keyframes floatAnimation {
+    0%, 40% {
+      transform: translateY(0);
+    }
+    60% {
+      transform: translateY(-12px);
+    }
+    80% {
+      transform: rotate(20deg);
+    }
+  }
+
+  @media (max-width:668px) {
+    font-size:1px ;
+    width: 50px;
+    height: 50px;
+    bottom: 10px;
+    right: 10px;
+    padding: 0;
+    a{
+      font-size: 1px;
+    }
+  }
+}
+
+.whatsapp-float:hover {
+  background-color: #35f07a;
+  transition: all .4s ease-in-out;
+}
+
+.my-float {
+  font-size: 24px;
+  margin-top: 18px;
+}

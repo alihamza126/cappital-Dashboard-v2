@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- google fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Work+Sans:ital,wght@0,100..900;1,100..900&display=swap"
+    rel="stylesheet">
+
+  <!-- ------google-fonts-end ------ -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+
+  <!----admin cdns ----->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" media="print" onload="this.media='all'">
+
+  <link href="/admin/css/sb-admin-2.min.css" rel="stylesheet">
+  <title>TheCapitalAcademy</title>
+
+  <!-- //seo tags -->
+  <meta name="description"
+    content="The Capital Academy offers top-notch educational resources and courses to help you achieve your academic and career goals. Join us today!">
+  <meta name="keywords"
+    content="MdCAT preparation, MdCAT syllabus, MdCAT past papers, MdCAT practice questions, MdCAT mock tests, MdCAT study materials, MdCAT online courses, MdCAT coaching, MdCAT tips and tricks, Best books for MdCAT, MdCAT exam dates, MdCAT registration, MdCAT eligibility criteria, MdCAT result, MdCAT cutoff marks, MdCAT subject-wise preparation, MdCAT chemistry MCQs, MdCAT biology MCQs, MdCAT physics MCQs, MdCAT English MCQs, MdCAT exam pattern, MdCAT preparation strategy, MdCAT success stories, MdCAT expert guidance, Free MdCAT resources, MdCAT 2024 preparation, MdCAT exam guide, MdCAT coaching centers, MdCAT video lectures, MdCAT online tests, MdCAT preparation apps, MdCAT study timetable, MdCAT sample papers, MdCAT scoring techniques, MdCAT online classes, MdCAT test series, MdCAT doubt clearing sessions, MdCAT preparation forums, MdCAT expert tips, MdCAT preparation books, MdCAT free mock tests, MdCAT solved papers, MdCAT previous year questions, MdCAT question bank, MdCAT exam preparation tips, MdCAT study groups, MdCAT online resources, MdCAT coaching reviews, MdCAT syllabus breakdown, MdCAT study plan, MdCAT physics preparation, MdCAT chemistry preparation, MdCAT biology preparation, MdCAT English preparation">
+  <meta property="og:title" content="The Capital Academy">
+  <meta property="og:description"
+    content="The Capital Academy offers top-notch educational resources and courses to help you achieve your academic and career goals.">
+  <meta property="og:image" content="/favicon.png">
+  <meta property="og:url" content="https://www.thecapitalacademy.online">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="The Capital Academy">
+  <meta name="twitter:description"
+    content="The Capital Academy offers top-notch educational resources and courses to help you achieve your academic and career goals.">
+  <meta name="twitter:image" content="/favicon.png">
+  <link rel="canonical" href="https://www.thecapitalacademy.online">
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "The Capital Academy",
+      "url": "https://www.thecapitalacademy.online",
+      "logo": "/favicon.png",
+      "sameAs": [
+        "https://www.facebook.com/people/The-Capital-Academy/61552018766463/?mibextid=ZbWKwL",
+        "https://www.instagram.com/thecapitalacademy.online",
+        "whatsapp://send?abid=03479598144&text=Hello%2C%20TheCapitalAcademy!"
+      ]
+    }
+    </script>
+
+
+
+
+
+  <!-- custom define -->
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "inter";
+    }
+
+    body {
+      background-color: #F4F4F4;
+      padding: 0 !important;
+      overflow: auto !important;
+    }
+
+    .text-black {
+      color: #252525e8 !important;
+    }
+  </style>
+  <style>
+    /* Preloader styles */
+    .preloader {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(255, 255, 255, 0.767);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      /* Ensure preloader is on top */
+    }
+
+    .pl {
+      display: block;
+      width: 9.375em;
+      height: 9.375em;
+    }
+
+    .pl__arrows,
+    .pl__ring-rotate,
+    .pl__ring-stroke,
+    .pl__tick {
+      animation-duration: 2s;
+      animation-timing-function: linear;
+      animation-iteration-count: infinite;
+    }
+
+    .pl__arrows {
+      animation-name: arrows42;
+      transform: rotate(45deg);
+      transform-origin: 16px 52px;
+    }
+
+    .pl__ring-rotate,
+    .pl__ring-stroke {
+      transform-origin: 80px 80px;
+    }
+
+    .pl__ring-rotate {
+      animation-name: ringRotate42;
+    }
+
+    .pl__ring-stroke {
+      animation-name: ringStroke42;
+      transform: rotate(-45deg);
+    }
+
+    .pl__tick {
+      animation-name: tick42;
+    }
+
+    .pl__tick:nth-child(2) {
+      animation-delay: -1.75s;
+    }
+
+    .pl__tick:nth-child(3) {
+      animation-delay: -1.5s;
+    }
+
+    .pl__tick:nth-child(4) {
+      animation-delay: -1.25s;
+    }
+
+    .pl__tick:nth-child(5) {
+      animation-delay: -1s;
+    }
+
+    .pl__tick:nth-child(6) {
+      animation-delay: -0.75s;
+    }
+
+    .pl__tick:nth-child(7) {
+      animation-delay: -0.5s;
+    }
+
+    .pl__tick:nth-child(8) {
+      animation-delay: -0.25s;
+    }
+
+    /* Animations */
+    @keyframes arrows42 {
+      from {
+        transform: rotate(45deg);
+      }
+
+      to {
+        transform: rotate(405deg);
+      }
+    }
+
+    @keyframes ringRotate42 {
+      from {
+        transform: rotate(0);
+      }
+
+      to {
+        transform: rotate(720deg);
+      }
+    }
+
+    @keyframes ringStroke42 {
+
+      from,
+      to {
+        stroke-dashoffset: 452;
+        transform: rotate(-45deg);
+      }
+
+      50% {
+        stroke-dashoffset: 169.5;
+        transform: rotate(-180deg);
+      }
+    }
+
+    @keyframes tick42 {
+
+      from,
+      3%,
+      47%,
+      to {
+        stroke-dashoffset: -12;
+      }
+
+      14%,
+      36% {
+        stroke-dashoffset: 0;
+      }
+    }
+  </style>
+
+  <style>
+    .navbar-nav .nav-link {
+      color: #fff;
+    }
+
+    .dropend .dropdown-toggle {
+      color: #4db835;
+      margin-left: 1em;
+    }
+
+    .dropdown-item {
+      font-size: 15px;
+      font-family: "fredoka";
+      font-weight: 500;
+    }
+
+    .dropdown-item:hover {
+      background-color: #4db835;
+      color: #fff;
+      border-radius: 5px;
+    }
+
+    .dropdown .dropdown-menu {
+      display: none;
+    }
+
+    .dropdown:hover>.dropdown-menu,
+    .dropend:hover>.dropdown-menu {
+      display: block;
+      margin-top: 0.125em;
+      margin-left: 0.125em;
+    }
+
+    @media screen and (min-width: 769px) {
+      .dropend:hover>.dropdown-menu {
+        position: absolute;
+        top: 0;
+        left: 100%;
+      }
+
+      .dropend .dropdown-toggle {
+        margin-left: 0.5em;
+      }
+    }
+  </style>
+
+  <style>
+    body {
+      --sb-track-color: #f1e6f3;
+      --sb-thumb-color: #1f66c4;
+      --sb-size: 10px;
+    }
+
+    body::-webkit-scrollbar {
+      width: var(--sb-size)
+    }
+
+    body::-webkit-scrollbar-track {
+      background: var(--sb-track-color);
+      border-radius: 4px;
+    }
+
+    body::-webkit-scrollbar-thumb {
+      background: var(--sb-thumb-color);
+      border-radius: 4px;
+
+    }
+
+    @supports not selector(::-webkit-scrollbar) {
+      body {
+        scrollbar-color: var(--sb-thumb-color) var(--sb-track-color);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Preloader HTML -->
+  <div class="preloader">
+    <svg class="pl" viewBox="0 0 160 160" width="160px" height="160px" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#000"></stop>
+          <stop offset="100%" stop-color="#fff"></stop>
+        </linearGradient>
+        <mask id="mask1">
+          <rect x="0" y="0" width="160" height="160" fill="url(#grad)"></rect>
+        </mask>
+        <mask id="mask2">
+          <rect x="28" y="28" width="104" height="104" fill="url(#grad)"></rect>
+        </mask>
+      </defs>
+
+      <g>
+        <g class="pl__ring-rotate">
+          <circle class="pl__ring-stroke" cx="80" cy="80" r="72" fill="none" stroke="hsl(223,90%,55%)" stroke-width="16"
+            stroke-dasharray="452.39 452.39" stroke-dashoffset="452" stroke-linecap="round"
+            transform="rotate(-45,80,80)"></circle>
+        </g>
+      </g>
+      <g mask="url(#mask1)">
+        <g class="pl__ring-rotate">
+          <circle class="pl__ring-stroke" cx="80" cy="80" r="72" fill="none" stroke="hsl(193,90%,55%)" stroke-width="16"
+            stroke-dasharray="452.39 452.39" stroke-dashoffset="452" stroke-linecap="round"
+            transform="rotate(-45,80,80)"></circle>
+        </g>
+      </g>
+
+      <g>
+        <g stroke-width="4" stroke-dasharray="12 12" stroke-dashoffset="12" stroke-linecap="round"
+          transform="translate(80,80)">
+          <polyline class="pl__tick" stroke="hsl(223,10%,90%)" points="0,2 0,14"
+            transform="rotate(-135,0,0) translate(0,40)"></polyline>
+          <polyline class="pl__tick" stroke="hsl(223,10%,90%)" points="0,2 0,14"
+            transform="rotate(-90,0,0) translate(0,40)"></polyline>
+          <polyline class="pl__tick" stroke="hsl(223,10%,90%)" points="0,2 0,14"
+            transform="rotate(-45,0,0) translate(0,40)"></polyline>
+          <polyline class="pl__tick" stroke="hsl(223,10%,90%)" points="0,2 0,14"
+            transform="rotate(0,0,0) translate(0,40)"></polyline>
+          <polyline class="pl__tick" stroke="hsl(223,10%,90%)" points="0,2 0,14"
+            transform="rotate(45,0,0) translate(0,40)"></polyline>
+          <polyline class="pl__tick" stroke="hsl(223,10%,90%)" points="0,2 0,14"
+            transform="rotate(90,0,0) translate(0,40)"></polyline>
+          <polyline class="pl__tick" stroke="hsl(223,10%,90%)" points="0,2 0,14"
+            transform="rotate(135,0,0) translate(0,40)"></polyline>
+          <polyline class="pl__tick" stroke="hsl(223,10%,90%)" points="0,2 0,14"
+            transform="rotate(180,0,0) translate(0,40)"></polyline>
+        </g>
+      </g>
+      <g mask="url(#mask1)">
+        <g stroke-width="4" stroke-dasharray="12 12" stroke-dashoffset="12" stroke-linecap="round"
+          transform="translate(80,80)">
+          <polyline class="pl__tick" stroke="hsl(223,90%,80%)" points="0,2 0,14"
+            transform="rotate(-135,0,0) translate(0,40)"></polyline>
+          <polyline class="pl__tick" stroke="hsl(223,90%,80%)" points="0,2 0,14"
+            transform="rotate(-90,0,0) translate(0,40)"></polyline>
+          <polyline class="pl__tick" stroke="hsl(223,90%,80%)" points="0,2 0,14"
+            transform="rotate(-45,0,0) translate(0,40)"></polyline>
+          <polyline class="pl__tick" stroke="hsl(223,90%,80%)" points="0,2 0,14"
+            transform="rotate(0,0,0) translate(0,40)"></polyline>
+          <polyline class="pl__tick" stroke="hsl(223,90%,80%)" points="0,2 0,14"
+            transform="rotate(45,0,0) translate(0,40)"></polyline>
+          <polyline class="pl__tick" stroke="hsl(223,90%,80%)" points="0,2 0,14"
+            transform="rotate(90,0,0) translate(0,40)"></polyline>
+          <polyline class="pl__tick" stroke="hsl(223,90%,80%)" points="0,2 0,14"
+            transform="rotate(135,0,0) translate(0,40)"></polyline>
+          <polyline class="pl__tick" stroke="hsl(223,90%,80%)" points="0,2 0,14"
+            transform="rotate(180,0,0) translate(0,40)"></polyline>
+        </g>
+      </g>
+
+      <g>
+        <g transform="translate(64,28)">
+          <g class="pl__arrows" transform="rotate(45,16,52)">
+            <path fill="hsl(3,90%,55%)"
+              d="M17.998,1.506l13.892,43.594c.455,1.426-.56,2.899-1.998,2.899H2.108c-1.437,0-2.452-1.473-1.998-2.899L14.002,1.506c.64-2.008,3.356-2.008,3.996,0Z">
+            </path>
+            <path fill="hsl(223,10%,90%)"
+              d="M14.009,102.499L.109,58.889c-.453-1.421,.559-2.889,1.991-2.889H29.899c1.433,0,2.444,1.468,1.991,2.889l-13.899,43.61c-.638,2.001-3.345,2.001-3.983,0Z">
+            </path>
+          </g>
+        </g>
+      </g>
+      <g mask="url(#mask2)">
+        <g transform="translate(64,28)">
+          <g class="pl__arrows" transform="rotate(45,16,52)">
+            <path fill="hsl(333,90%,55%)"
+              d="M17.998,1.506l13.892,43.594c.455,1.426-.56,2.899-1.998,2.899H2.108c-1.437,0-2.452-1.473-1.998-2.899L14.002,1.506c.64-2.008,3.356-2.008,3.996,0Z">
+            </path>
+            <path fill="hsl(223,90%,80%)"
+              d="M14.009,102.499L.109,58.889c-.453-1.421,.559-2.889,1.991-2.889H29.899c1.433,0,2.444,1.468,1.991,2.889l-13.899,43.61c-.638,2.001-3.345,2.001-3.983,0Z">
+            </path>
+          </g>
+        </g>
+      </g>
+    </svg>
+  </div>
+
+
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+
+
+
+  <script defer src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+    crossorigin="anonymous"></script>
+</body>
+
+<script>
+  try {
+    window.onload = function () {
+      if (document.querySelector('.preloader').style.display != null) {
+        document.querySelector('.preloader').style.display = 'none';
+        // document.getElementById('main-content').style.display = 'block';
+      }
+    };
+  } catch (error) {
+
+  }
+</script>
+
+</html>

@@ -1,0 +1,32 @@
+.calculator {
+
+
+    .cal-box {
+        background-color: rgba(128, 0, 128, 0.021);
+        padding: 2rem 3rem;
+        border-radius: 20px;
+
+
+        .title {
+
+            h3 {
+                font-weight: bold;
+                color: rgb(85, 83, 83);
+            }
+        }
+
+        input[type='number'] {
+            background-color: #ffffffa8;
+        }
+    }
+}
+
+.cal-glassy-background {
+    background-image: url(/src/assets/bgcalculator.svg);
+    background-size: cover;
+    position: relative;
+    overflow: hidden;
+    background-repeat: no-repeat;
+    border-radius: 3px; /* Adjust border radius as needed */
+}
+  

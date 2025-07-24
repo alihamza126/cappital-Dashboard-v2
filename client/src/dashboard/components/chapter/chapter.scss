@@ -1,0 +1,88 @@
+.subject-page {
+    .subject-card {
+        .image-box {
+            position: relative;
+            overflow: hidden;
+            border-radius: 66px;
+            background-color: transparent;
+            min-height: 150px;
+
+            img {
+                width: 100%;
+                height: 100%;
+                background-color: #310B7B;
+                object-fit:fill;
+                transition: opacity 0.3s ease-in-out;
+                // opacity: 0; /* Initially hide the image */
+            }
+
+            img.lazyloaded {
+                opacity: 1; /* Show the image when loaded */
+                background-color: transparent;
+            }
+
+            .placeholder {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: url('/loading.gif') center center no-repeat;
+                background-size: cover;
+                transition: opacity 0.3s ease-in-out;
+                opacity: 1; /* Initially show the loading GIF */
+            }
+
+            img.lazyloaded + .placeholder {
+                opacity: 0; /* Hide the loading GIF when the image is loaded */
+            }
+        }
+
+        .title {
+            text-align: center;
+            padding-top: 10px;
+
+            p {
+                font-size: 20px;
+                font-weight: bold;
+                color: #310B7B;
+                font-family: "fredoka";
+                text-transform: uppercase;
+
+                @media (max-width: 560px) {
+                    font-size: 14px;
+                }
+            }
+        }
+    }
+    
+}
+
+
+
+.subject-page.locked {
+    position: relative;
+    opacity: 0.6;
+}
+
+.subject-page.locked .subject-card {
+    pointer-events: none; /* Disable click events */
+}
+
+.subject-page.locked .lock-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(26, 26, 27, 0.719);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-size: 4rem;
+}
+
+.subject-page.locked .lock-overlay .lock-icon {
+    font-size: 3rem;
+}

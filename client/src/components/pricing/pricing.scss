@@ -1,0 +1,115 @@
+.pricing {
+    &:hover .after-title-pricing h2::after{
+        width: 30%;
+        
+    }
+    // padding: 3rem;
+    .after-title-pricing{
+        font-size: 40px;
+        color:rgb(12, 22, 27) ;
+        position: relative;
+    
+        h2{
+           display: inline-block;
+        }
+        h2::after{
+            transition: all .5s ease-in-out;
+            content: '';
+            width: 4rem;
+            height: 5px;
+            background-color: #1757AB;
+            bottom: 0px;
+            left: 2px;
+            position:absolute;
+            border-radius: 10px;
+        }
+    }
+    .heading{
+        display: flex;
+        flex-direction: row;
+        align-content: center;
+        justify-content: space-between;
+        align-items: flex-start;
+        font-size: 44px;
+        overflow: hidden;
+
+        .left{
+        }
+        .right{
+            display: flex;
+            gap: 10px;
+            button{
+                padding: 5px 9px;
+                font-size: 13px;
+                border-radius: 30px;
+                border:2px solid rgba(128, 128, 128, 0.281);
+                box-shadow: 1px 1px 3px 2px rgba(255, 255, 255, 0.404);
+                transition: all .2s ease-in;
+                &:hover{
+                    background-color: #2699fb;
+                    fill: #FFFFFF;
+                    border:2px solid rgba(128, 128, 128, 0);
+                }
+                &:hover svg path {
+                    fill: white;
+                }
+            }
+        }
+    }
+    .course-card {
+        box-sizing: border-box;
+        background-color: #FFFFFF;
+        overflow: hidden;
+        max-width: 428px;
+        border-radius: 10px !important;
+        border-radius: 6px;
+        box-shadow: 0px 3px 7px rgba(0, 0, 0, 0.3);
+
+        .top {
+            img {
+                border-radius: 5px;
+                width: 100%;
+                height: 100%;
+            }
+        }
+
+        .bottom {
+                display: flex;
+                flex-direction: column;
+                padding: 1rem ;
+            .catagory {
+                margin-bottom: 10px;
+                width: fit-content;
+                padding:3px 8px;
+                background: rgba(38, 153, 251, 0.1);
+                border-radius: 3px;
+                font-weight: 600;
+                font-size: 13px;
+                color: #2699fb;
+            }
+
+            .title {
+                font-size: 10px;
+                color: #0a2134;
+                font-weight: 700;
+            }
+
+            .details {
+                font-size: 16px;
+                color: #43505b;
+            }
+        }
+    }
+}
+
+.swiper-pagination{
+    position:absolute;
+    // margin-top: 3rem !important;
+    bottom: -.31rem !important;
+    font-size: 33px;
+
+    .swiper-pagination-bullet{
+        width: .71rem;
+        height: .71rem;
+    }
+}

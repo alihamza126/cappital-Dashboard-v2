@@ -1,0 +1,124 @@
+.review {
+    &:hover .after-title-review h2::after {
+        width: 100%;
+
+    }
+
+    .after-title-review {
+        font-size: 40px;
+        color: rgb(12, 22, 27);
+        position: relative;
+        text-align: center;
+        
+        h2 {
+            position: relative;
+            display: inline-block;
+            font-family: 'visby';
+            font-weight: 600;
+            color:rgb(75, 75, 75);
+        }
+
+        h2::after {
+            transition: all .5s ease-in-out;
+            content: '';
+            width: 6rem;
+            height: 5px;
+            background-color: #1757AB;
+            bottom: -10px;
+            left: 2px;
+            position: absolute;
+            border-radius: 10px;
+        }
+    }
+
+    .container {
+
+
+        .review-card {
+            width: 100%;
+            border-radius: 17px;
+            box-sizing: border-box;
+            padding: 1rem 1.4rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0px 0px 0px 1px rgba(0, 0, 0, 0.055);
+            background-color: #F8F9FC;
+
+            .img {
+                img {
+                    height: 55px;
+                    border-radius: 50%;
+                }
+            }
+
+            .name {
+                font-family: 'visby';
+                font-size: 21px;
+                font-weight: 700;
+                color: rgb(92, 92, 92);
+                text-transform: capitalize;
+                padding: 5px;
+            }
+
+            .review {
+                text-align: center;
+                justify-content: center;
+                padding: 0px 2px;
+            }
+
+            .info {
+                width: 100%;
+                display: flex;
+                justify-content: space-between;
+                font-size: 11px;
+                margin-top: 20px;
+
+                .city {
+                    background-color: #2699fb1a;
+                    padding: 6px;
+                    border-radius: 6px;
+                    color: #2699fb;
+                }
+
+                .date {
+                    background-color: #2699fb1a;
+                    padding: 6px;
+                    border-radius: 6px;
+                    color: #2699fb;
+                }
+            }
+        }
+    }
+
+    .swiper-pagination{
+
+        height: 1.3rem;
+        // height: 2rem;
+        // bottom: -.31rem !important;
+        // font-size: 7px;
+        // width: 3rem;
+        // display: inline-block;
+        // background-color: #538ddf !important;
+        // left: 50%;
+        // padding: 5px;
+        // border-radius: 10px;
+        // overflow: hidden;
+        // color: #f0eeec;
+        // font-weight: 700;
+        
+        // .swiper-pagination-fraction{
+        //     span{
+        //         // font-size: 12px;
+        //     }
+
+        // }
+        // .swiper-pagination-current{
+        //     // font-size: 12px;
+        // }
+        // .swiper-pagination-total{
+        //     // font-size: 12px;
+        // }
+    }
+
+}
