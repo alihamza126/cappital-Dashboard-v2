@@ -50,7 +50,7 @@ const userSchema = new schema({
         required: false,
         default: null
     },
-    domicalCity: {
+    city: { //city
         type: String,
         required: false,
         default: '',

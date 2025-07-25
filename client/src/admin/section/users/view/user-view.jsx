@@ -137,7 +137,7 @@ export default function UserPage() {
                 { id: 'isMdcat', label: 'isMdcat' },
                 { id: 'isNums', label: 'isNums' },
                 { id: 'aggPercentage', label: 'Aggregate Percentage' },
-                { id: 'domicalCity', label: 'Domical City' },
+                { id: 'city', label: 'Domical City' },
                 { id: '' },
 
 
@@ -159,7 +159,7 @@ export default function UserPage() {
                     isMdcat={row.isMdcat}
                     isNums={row.isNums}
                     aggPercentage={row.aggPercentage}
-                    domicalCity={row.domicalCity}
+                    domicalCity={row.city}
 
                     // isVerified={row.isVerified}
                     selected={selected.indexOf(row._id) !== -1}
