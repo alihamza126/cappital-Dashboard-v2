@@ -27,6 +27,10 @@ const adminDashInfo = require('./routes/dashboard/dashboardInfo.js');
 const McQRouter = require('./routes/McQ/McQ.js');
 const reportRouter = require('./routes/report/report.js');
 const admin = require('./routes/Admin.js');
+const seriesRouter = require('./routes/series/series.js');
+const testRouter = require('./routes/series/tests.js');
+const enrollmentRouter = require('./routes/series/enrollments.js');
+const paymentRouter = require('./routes/series/payments.js');
 
 
 //dotenv variables
@@ -136,6 +140,10 @@ app.use('/adminDashboard', adminDashInfo);
 app.use('/mcq', McQRouter);
 app.use('/report', reportRouter);
 app.use('/admin', admin);
+app.use('/series', seriesRouter);
+app.use('/tests', testRouter);
+app.use('/enrollments', enrollmentRouter);
+app.use('/payments', paymentRouter);
 
 
 //React app configurations

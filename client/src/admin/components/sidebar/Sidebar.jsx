@@ -69,6 +69,22 @@ const Sidebar = () => {
                         </div>
                     </div>
                 </li>
+                {/* Series Management */}
+                <li className="nav-item">
+                    <a className="nav-link collapsed" data-bs-toggle="collapse" href="#collapseSeries" aria-expanded="false">
+                        <i className="fas fa-fw fa-book"></i>
+                        <span>Series Management</span>
+                    </a>
+                    <div id="collapseSeries" className="collapse" data-bs-parent="#sidebar">
+                        <div className="bg-white py-2 collapse-inner rounded">
+                            <h6 className="collapse-header">Series Operations:</h6>
+                            <Link to="/series" className="collapse-item">Manage Series</Link>
+                            <Link to="/tests" className="collapse-item">Manage Tests</Link>
+                            <Link to="/enrollments" className="collapse-item">Manage Enrollments</Link>
+                            <Link to="/payments" className="collapse-item">Manage Payments</Link>
+                        </div>
+                    </div>
+                </li>
                 <hr />
                 {/* Addons */}
                 <li className="nav-item">
