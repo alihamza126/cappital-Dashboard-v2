@@ -36,7 +36,9 @@ import {
     School, 
     Assessment,
     People,
-    Payment
+    Payment,
+    CloudUpload,
+    Image
 } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
 import axiosInstance from '../../../baseUrl';
@@ -64,6 +66,8 @@ const SeriesManagement = () => {
         isActive: true,
         expiresAt: ''
     });
+    const [image, setImage] = useState(null);
+    const [imageUrl, setImageUrl] = useState('');
 
     const [errors, setErrors] = useState({});
 
@@ -104,6 +108,7 @@ const SeriesManagement = () => {
                 isActive: series.isActive,
                 expiresAt: series.expiresAt ? new Date(series.expiresAt).toISOString().split('T')[0] : ''
             });
+            setImageUrl(series.coverImageUrl || '');
         } else {
             setEditingSeries(null);
             setFormData({
@@ -121,6 +126,7 @@ const SeriesManagement = () => {
                 isActive: true,
                 expiresAt: ''
             });
+            setImageUrl('');
         }
         setErrors({});
         setOpenDialog(true);
@@ -130,6 +136,16 @@ const SeriesManagement = () => {
         setOpenDialog(false);
         setEditingSeries(null);
         setErrors({});
+        setImage(null);
+        setImageUrl('');
+    };
+
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setImage(file);
+            setImageUrl(URL.createObjectURL(file));
+        }
     };
 
     const validateForm = () => {
@@ -150,7 +166,7 @@ const SeriesManagement = () => {
 
         try {
             setLoading(true);
-            const submitData = {
+            let submitData = {
                 ...formData,
                 price: Number(formData.price),
                 originalPrice: formData.originalPrice ? Number(formData.originalPrice) : undefined,
@@ -158,6 +174,23 @@ const SeriesManagement = () => {
                 totalDurationMin: formData.totalDurationMin ? Number(formData.totalDurationMin) : undefined,
                 expiresAt: formData.expiresAt ? new Date(formData.expiresAt) : undefined
             };
+
+            if (image) {
+                const formImgData = new FormData();
+                formImgData.append('image', image);
+                const config = {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                    }
+                };
+                const imgResponse = await axiosInstance.post('/upload/img', formImgData, config);
+                if (imgResponse.status === 200) {
+                    submitData.coverImageUrl = imgResponse.data.fileURL;
+                } else {
+                    enqueueSnackbar('Failed to upload image', { variant: 'error' });
+                    return;
+                }
+            }
 
             if (editingSeries) {
                 await axiosInstance.put(`/series/${editingSeries._id}`, submitData);
@@ -364,13 +397,35 @@ const SeriesManagement = () => {
                             />
                         </Grid>
                         <Grid item xs={12}>
-                            <TextField
-                                fullWidth
-                                label="Cover Image URL"
-                                value={formData.coverImageUrl}
-                                onChange={(e) => setFormData({ ...formData, coverImageUrl: e.target.value })}
-                                placeholder="https://example.com/image.jpg"
+                            <Typography variant="h6" gutterBottom>
+                                Cover Image
+                            </Typography>
+                            <input
+                                accept="image/*"
+                                style={{ display: 'none' }}
+                                id="series-image-upload"
+                                type="file"
+                                onChange={handleImageChange}
                             />
+                            <label htmlFor="series-image-upload">
+                                <Button
+                                    variant="outlined"
+                                    component="span"
+                                    startIcon={<CloudUpload />}
+                                    sx={{ mb: 2 }}
+                                >
+                                    Upload Cover Image
+                                </Button>
+                            </label>
+                            {(imageUrl || formData.coverImageUrl) && (
+                                <Box sx={{ mt: 2 }}>
+                                    <img 
+                                        src={imageUrl || formData.coverImageUrl} 
+                                        alt="Series Cover" 
+                                        style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 8 }}
+                                    />
+                                </Box>
+                            )}
                         </Grid>
                         <Grid item xs={12}>
                             <TextField

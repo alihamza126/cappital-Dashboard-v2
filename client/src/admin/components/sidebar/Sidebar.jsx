@@ -82,6 +82,7 @@ const Sidebar = () => {
                             <Link to="/tests" className="collapse-item">Manage Tests</Link>
                             <Link to="/enrollments" className="collapse-item">Manage Enrollments</Link>
                             <Link to="/payments" className="collapse-item">Manage Payments</Link>
+                            <Link to="/mcq-management" className="collapse-item">Manage MCQs</Link>
                         </div>
                     </div>
                 </li>

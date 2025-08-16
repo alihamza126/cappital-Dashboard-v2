@@ -31,6 +31,7 @@ const SeriesManagement = lazy(() => import('./admin/components/series/SeriesMana
 const TestManagement = lazy(() => import('./admin/components/series/TestManagement.jsx'));
 const EnrollmentManagement = lazy(() => import('./admin/components/series/EnrollmentManagement.jsx'));
 const PaymentManagement = lazy(() => import('./admin/components/series/PaymentManagement.jsx'));
+const McqManagement = lazy(() => import('./admin/components/series/McqManagement.jsx'));
 
 // dashboard pages
 const DashboardLayout = lazy(() => import('./dashboard/layouts/index.jsx'));
@@ -259,11 +260,16 @@ const Routes = () => {
           errorElement: <CrashError />,
           element: <LazyLoader><EnrollmentManagement /></LazyLoader>
         },
-        {
-          path: "payments",
-          errorElement: <CrashError />,
-          element: <LazyLoader><PaymentManagement /></LazyLoader>
-        }
+                    {
+              path: "payments",
+              errorElement: <CrashError />,
+              element: <LazyLoader><PaymentManagement /></LazyLoader>
+            },
+            {
+              path: "mcq-management",
+              errorElement: <CrashError />,
+              element: <LazyLoader><McqManagement /></LazyLoader>
+            }
       ],
     },
     // --------------Page not found route----------------

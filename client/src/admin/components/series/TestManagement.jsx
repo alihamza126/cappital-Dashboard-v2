@@ -29,7 +29,15 @@ import {
     Alert,
     Accordion,
     AccordionSummary,
-    AccordionDetails
+    AccordionDetails,
+    List,
+    ListItem,
+    ListItemText,
+    ListItemSecondaryAction,
+    Checkbox,
+    Divider,
+    Tabs,
+    Tab
 } from '@mui/material';
 import { 
     Add, 
@@ -39,19 +47,25 @@ import {
     ExpandMore,
     Assessment,
     Schedule,
-    School
+    School,
+    Search,
+    FilterList
 } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
 import axiosInstance from '../../../baseUrl';
+import McqSelector from './McqSelector';
 
 const TestManagement = () => {
     const [tests, setTests] = useState([]);
     const [series, setSeries] = useState([]);
     const [loading, setLoading] = useState(false);
     const [openDialog, setOpenDialog] = useState(false);
+    const [openMcqDialog, setOpenMcqDialog] = useState(false);
     const [editingTest, setEditingTest] = useState(null);
     const [selectedTest, setSelectedTest] = useState(null);
     const [selectedSeriesId, setSelectedSeriesId] = useState('');
+    const [selectedMcqs, setSelectedMcqs] = useState([]);
+    const [tabValue, setTabValue] = useState(0);
     const { enqueueSnackbar } = useSnackbar();
 
     const [formData, setFormData] = useState({
@@ -85,10 +99,12 @@ const TestManagement = () => {
         }
     }, [selectedSeriesId]);
 
+
+
     const fetchSeries = async () => {
         try {
             const response = await axiosInstance.get('/series/all');
-            setSeries(response.data);
+            setSeries(response.data || []);
         } catch (error) {
             enqueueSnackbar('Failed to fetch series', { variant: 'error' });
         }
@@ -98,13 +114,15 @@ const TestManagement = () => {
         try {
             setLoading(true);
             const response = await axiosInstance.get(`/tests/series/${seriesId}`);
-            setTests(response.data);
+            setTests(response.data || []);
         } catch (error) {
             enqueueSnackbar('Failed to fetch tests', { variant: 'error' });
         } finally {
             setLoading(false);
         }
     };
+
+
 
     const handleOpenDialog = (test = null) => {
         if (test) {
@@ -124,6 +142,7 @@ const TestManagement = () => {
                 questions: test.questions || [],
                 isPublished: test.isPublished
             });
+            setSelectedMcqs(test.questions || []);
         } else {
             setEditingTest(null);
             setFormData({
@@ -141,6 +160,7 @@ const TestManagement = () => {
                 questions: [],
                 isPublished: false
             });
+            setSelectedMcqs([]);
         }
         setErrors({});
         setOpenDialog(true);
@@ -150,6 +170,19 @@ const TestManagement = () => {
         setOpenDialog(false);
         setEditingTest(null);
         setErrors({});
+        setSelectedMcqs([]);
+    };
+
+    const handleOpenMcqDialog = () => {
+        setOpenMcqDialog(true);
+    };
+
+    const handleCloseMcqDialog = () => {
+        setOpenMcqDialog(false);
+    };
+
+    const handleMcqSelection = (selectedMcqs) => {
+        setSelectedMcqs(selectedMcqs);
     };
 
     const validateForm = () => {
@@ -159,6 +192,7 @@ const TestManagement = () => {
         if (formData.subjects.length === 0) newErrors.subjects = 'At least one subject is required';
         if (!formData.durationMin) newErrors.durationMin = 'Duration is required';
         if (!formData.totalMarks) newErrors.totalMarks = 'Total marks is required';
+        if (selectedMcqs.length === 0) newErrors.questions = 'At least one MCQ is required';
         
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -176,7 +210,11 @@ const TestManagement = () => {
                 availability: {
                     startAt: formData.availability.startAt ? new Date(formData.availability.startAt) : undefined,
                     endAt: formData.availability.endAt ? new Date(formData.availability.endAt) : undefined
-                }
+                },
+                questions: selectedMcqs.map(mcq => ({
+                    questionId: mcq._id,
+                    marks: 1 // Default marks per question
+                }))
             };
 
             if (editingTest) {
@@ -226,6 +264,14 @@ const TestManagement = () => {
 
     const handleSubjectChange = (event) => {
         setFormData({ ...formData, subjects: event.target.value });
+    };
+
+
+
+
+
+    const handleTabChange = (event, newValue) => {
+        setTabValue(newValue);
     };
 
     const getStatsCard = (title, value, icon, color) => (
@@ -302,7 +348,7 @@ const TestManagement = () => {
                             {getStatsCard('Total Duration', `${tests.reduce((sum, t) => sum + t.durationMin, 0)} min`, <Schedule />, '#f6c23e')}
                         </Grid>
                         <Grid item xs={12} sm={6} md={3}>
-                            {getStatsCard('Total Marks', tests.reduce((sum, t) => sum + t.totalMarks, 0), <Assessment />, '#e74a3b')}
+                            {getStatsCard('Total Questions', tests.reduce((sum, t) => sum + (t.questions?.length || 0), 0), <Assessment />, '#e74a3b')}
                         </Grid>
                     </Grid>
 
@@ -339,7 +385,7 @@ const TestManagement = () => {
                                             <TableCell>Mode</TableCell>
                                             <TableCell>Subjects</TableCell>
                                             <TableCell>Duration</TableCell>
-                                            <TableCell>Marks</TableCell>
+                                            <TableCell>Questions</TableCell>
                                             <TableCell>Status</TableCell>
                                             <TableCell>Actions</TableCell>
                                         </TableRow>
@@ -373,7 +419,7 @@ const TestManagement = () => {
                                                     ))}
                                                 </TableCell>
                                                 <TableCell>{item.durationMin} min</TableCell>
-                                                <TableCell>{item.totalMarks}</TableCell>
+                                                <TableCell>{item.questions?.length || 0}</TableCell>
                                                 <TableCell>
                                                     <Chip 
                                                         label={item.isPublished ? 'Published' : 'Draft'} 
@@ -422,135 +468,216 @@ const TestManagement = () => {
             )}
 
             {/* Add/Edit Dialog */}
-            <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
+            <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="lg" fullWidth>
                 <DialogTitle>
                     {editingTest ? 'Edit Test' : 'Add New Test'}
                 </DialogTitle>
                 <DialogContent>
-                    <Grid container spacing={2} sx={{ mt: 1 }}>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                fullWidth
-                                label="Title"
-                                value={formData.title}
-                                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                error={!!errors.title}
-                                helperText={errors.title}
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <FormControl fullWidth>
-                                <InputLabel>Mode</InputLabel>
-                                <Select
-                                    value={formData.mode}
-                                    onChange={(e) => setFormData({ ...formData, mode: e.target.value })}
-                                >
-                                    {modes.map((mode) => (
-                                        <MenuItem key={mode} value={mode}>
-                                            {mode}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid item xs={12}>
-                            <TextField
-                                fullWidth
-                                label="Description"
-                                value={formData.description}
-                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                multiline
-                                rows={3}
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <FormControl fullWidth error={!!errors.subjects}>
-                                <InputLabel>Subjects</InputLabel>
-                                <Select
-                                    multiple
-                                    value={formData.subjects}
-                                    onChange={handleSubjectChange}
-                                    renderValue={(selected) => (
-                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                            {selected.map((value) => (
-                                                <Chip key={value} label={value} size="small" />
-                                            ))}
-                                        </Box>
+                    <Tabs value={tabValue} onChange={handleTabChange} sx={{ mb: 2 }}>
+                        <Tab label="Test Details" />
+                        <Tab label="MCQ Selection" />
+                    </Tabs>
+
+                    {tabValue === 0 && (
+                        <Grid container spacing={2} sx={{ mt: 1 }}>
+                            <Grid item xs={12} sm={6}>
+                                <TextField
+                                    fullWidth
+                                    label="Title"
+                                    value={formData.title}
+                                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                    error={!!errors.title}
+                                    helperText={errors.title}
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Mode</InputLabel>
+                                    <Select
+                                        value={formData.mode}
+                                        onChange={(e) => setFormData({ ...formData, mode: e.target.value })}
+                                    >
+                                        {modes.map((mode) => (
+                                            <MenuItem key={mode} value={mode}>
+                                                {mode}
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+                            <Grid item xs={12}>
+                                <TextField
+                                    fullWidth
+                                    label="Description"
+                                    value={formData.description}
+                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                    multiline
+                                    rows={3}
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <FormControl fullWidth error={!!errors.subjects}>
+                                    <InputLabel>Subjects</InputLabel>
+                                    <Select
+                                        multiple
+                                        value={formData.subjects}
+                                        onChange={handleSubjectChange}
+                                        renderValue={(selected) => (
+                                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                                {selected.map((value) => (
+                                                    <Chip key={value} label={value} size="small" />
+                                                ))}
+                                            </Box>
+                                        )}
+                                    >
+                                        {subjects.map((subject) => (
+                                            <MenuItem key={subject} value={subject}>
+                                                {subject}
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                    {errors.subjects && (
+                                        <Typography variant="caption" color="error">
+                                            {errors.subjects}
+                                        </Typography>
                                     )}
+                                </FormControl>
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <TextField
+                                    fullWidth
+                                    label="Duration (minutes)"
+                                    type="number"
+                                    value={formData.durationMin}
+                                    onChange={(e) => setFormData({ ...formData, durationMin: e.target.value })}
+                                    error={!!errors.durationMin}
+                                    helperText={errors.durationMin}
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <TextField
+                                    fullWidth
+                                    label="Total Marks"
+                                    type="number"
+                                    value={formData.totalMarks}
+                                    onChange={(e) => setFormData({ ...formData, totalMarks: e.target.value })}
+                                    error={!!errors.totalMarks}
+                                    helperText={errors.totalMarks}
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <TextField
+                                    fullWidth
+                                    label="Start Date"
+                                    type="date"
+                                    value={formData.availability.startAt}
+                                    onChange={(e) => setFormData({ 
+                                        ...formData, 
+                                        availability: { ...formData.availability, startAt: e.target.value }
+                                    })}
+                                    InputLabelProps={{ shrink: true }}
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <TextField
+                                    fullWidth
+                                    label="End Date"
+                                    type="date"
+                                    value={formData.availability.endAt}
+                                    onChange={(e) => setFormData({ 
+                                        ...formData, 
+                                        availability: { ...formData.availability, endAt: e.target.value }
+                                    })}
+                                    InputLabelProps={{ shrink: true }}
+                                />
+                            </Grid>
+                            <Grid item xs={12}>
+                                <FormControlLabel
+                                    control={
+                                        <Switch
+                                            checked={formData.isPublished}
+                                            onChange={(e) => setFormData({ ...formData, isPublished: e.target.checked })}
+                                        />
+                                    }
+                                    label="Published"
+                                />
+                            </Grid>
+                        </Grid>
+                    )}
+
+                    {tabValue === 1 && (
+                        <Box>
+                            <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Typography variant="h6">
+                                    Selected MCQs: {selectedMcqs.length}
+                                </Typography>
+                                <Button
+                                    variant="outlined"
+                                    startIcon={<Add />}
+                                    onClick={handleOpenMcqDialog}
                                 >
-                                    {subjects.map((subject) => (
-                                        <MenuItem key={subject} value={subject}>
-                                            {subject}
-                                        </MenuItem>
+                                    Add MCQs
+                                </Button>
+                            </Box>
+                            
+                            {errors.questions && (
+                                <Alert severity="error" sx={{ mb: 2 }}>
+                                    {errors.questions}
+                                </Alert>
+                            )}
+
+                            {selectedMcqs.length > 0 ? (
+                                <List>
+                                    {selectedMcqs.map((mcq, index) => (
+                                        <React.Fragment key={mcq._id}>
+                                            <ListItem>
+                                                <ListItemText
+                                                    primary={
+                                                        <Typography variant="body2">
+                                                            {index + 1}. {mcq.question}
+                                                        </Typography>
+                                                    }
+                                                    secondary={
+                                                        <Box>
+                                                            <Typography variant="caption" color="textSecondary">
+                                                                Subject: {mcq.subject} | Chapter: {mcq.chapter} | Difficulty: {mcq.difficulty}
+                                                            </Typography>
+                                                            <Box sx={{ mt: 1 }}>
+                                                                {mcq.options.map((option, optIndex) => (
+                                                                    <Typography 
+                                                                        key={optIndex} 
+                                                                        variant="caption" 
+                                                                        color={optIndex === mcq.correctOption ? 'success.main' : 'text.secondary'}
+                                                                        sx={{ display: 'block' }}
+                                                                    >
+                                                                        {String.fromCharCode(65 + optIndex)}. {option}
+                                                                    </Typography>
+                                                                ))}
+                                                            </Box>
+                                                        </Box>
+                                                    }
+                                                />
+                                                <ListItemSecondaryAction>
+                                                    <IconButton
+                                                        edge="end"
+                                                        onClick={() => setSelectedMcqs(selectedMcqs.filter(m => m._id !== mcq._id))}
+                                                        color="error"
+                                                    >
+                                                        <Delete />
+                                                    </IconButton>
+                                                </ListItemSecondaryAction>
+                                            </ListItem>
+                                            {index < selectedMcqs.length - 1 && <Divider />}
+                                        </React.Fragment>
                                     ))}
-                                </Select>
-                                {errors.subjects && (
-                                    <Typography variant="caption" color="error">
-                                        {errors.subjects}
-                                    </Typography>
-                                )}
-                            </FormControl>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                fullWidth
-                                label="Duration (minutes)"
-                                type="number"
-                                value={formData.durationMin}
-                                onChange={(e) => setFormData({ ...formData, durationMin: e.target.value })}
-                                error={!!errors.durationMin}
-                                helperText={errors.durationMin}
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                fullWidth
-                                label="Total Marks"
-                                type="number"
-                                value={formData.totalMarks}
-                                onChange={(e) => setFormData({ ...formData, totalMarks: e.target.value })}
-                                error={!!errors.totalMarks}
-                                helperText={errors.totalMarks}
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                fullWidth
-                                label="Start Date"
-                                type="date"
-                                value={formData.availability.startAt}
-                                onChange={(e) => setFormData({ 
-                                    ...formData, 
-                                    availability: { ...formData.availability, startAt: e.target.value }
-                                })}
-                                InputLabelProps={{ shrink: true }}
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                fullWidth
-                                label="End Date"
-                                type="date"
-                                value={formData.availability.endAt}
-                                onChange={(e) => setFormData({ 
-                                    ...formData, 
-                                    availability: { ...formData.availability, endAt: e.target.value }
-                                })}
-                                InputLabelProps={{ shrink: true }}
-                            />
-                        </Grid>
-                        <Grid item xs={12}>
-                            <FormControlLabel
-                                control={
-                                    <Switch
-                                        checked={formData.isPublished}
-                                        onChange={(e) => setFormData({ ...formData, isPublished: e.target.checked })}
-                                    />
-                                }
-                                label="Published"
-                            />
-                        </Grid>
-                    </Grid>
+                                </List>
+                            ) : (
+                                <Alert severity="info">
+                                    No MCQs selected. Click "Add MCQs" to select questions for this test.
+                                </Alert>
+                            )}
+                        </Box>
+                    )}
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleCloseDialog}>Cancel</Button>
@@ -564,6 +691,15 @@ const TestManagement = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
+
+            {/* MCQ Selection Dialog */}
+            <McqSelector
+                open={openMcqDialog}
+                onClose={handleCloseMcqDialog}
+                onSelect={handleMcqSelection}
+                selectedMcqs={selectedMcqs}
+                subjects={subjects}
+            />
 
             {/* Test Details Dialog */}
             <Dialog open={!!selectedTest} onClose={() => setSelectedTest(null)} maxWidth="md" fullWidth>
@@ -595,6 +731,9 @@ const TestManagement = () => {
                                     {selectedTest.subjects.map((subject, index) => (
                                         <Chip key={index} label={subject} size="small" sx={{ mr: 0.5, mb: 0.5 }} />
                                     ))}
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <Typography variant="subtitle2">Questions: {selectedTest.questions?.length || 0}</Typography>
                                 </Grid>
                                 {selectedTest.availability?.startAt && (
                                     <Grid item xs={12} sm={6}>
