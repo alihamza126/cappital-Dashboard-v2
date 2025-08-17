@@ -102,6 +102,7 @@ router.post('/get', checkTrialStatus, wrapAsync(async (req, res) => {
 
         res.json(mcqs);
     } catch (error) {
+        console.log(error)
         res.status(500).send('Internal Server Error');
     }
 }));
@@ -133,14 +134,16 @@ router.put('/update', wrapAsync(async (req, res) => {
                 options: req.body.formData.options,
                 correctOption: req.body.formData.correctOption,
                 difficulty: req.body.formData.difficulty,
-                subject: req.body.formData.subj,
-                chapter: req.body.formData.chap,
+                subject: req.body.formData.subject,
+                chapter: req.body.formData.chapter,
                 category: req.body.formData.category,
                 topic: req.body.formData.topic,
                 course: req.body.formData.course,
                 info: req.body.formData.info,
                 explain: req.body.formData.explain,
                 imageUrl: req.body.formData.imageUrl,
+                isSeries: req.body.formData.isSeries,
+                seriesId: req.body.formData.seriesId,
             },
         )
         res.send("updated");
@@ -152,7 +155,7 @@ router.put('/update', wrapAsync(async (req, res) => {
 //get pages mcqs
 router.get('/pages', wrapAsync(async (req, res) => {
     const page = parseInt(req.query.page) || 1;
-    const limit = 500;
+    const limit = parseInt(req.query.limit) || 500;
     try {
         const mcqs = await MCQ.find()
             .sort({ subject: 1 })  // Static sort order: descending by createdAt
@@ -162,8 +165,19 @@ router.get('/pages', wrapAsync(async (req, res) => {
         res.json({
             mcqs,
             totalPages: Math.ceil(totalCount / limit),
-            currentPage: page
+            currentPage: page,
+            totalCount
         });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+}));
+
+// Admin endpoint to get all MCQs for management
+router.get('/admin/all', wrapAsync(async (req, res) => {
+    try {
+        const mcqs = await MCQ.find().sort({ createdAt: -1 });
+        res.json(mcqs);
     } catch (err) {
         res.status(500).json({ message: err.message });
     }

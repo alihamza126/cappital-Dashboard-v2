@@ -80,9 +80,9 @@ const Sidebar = () => {
                             <h6 className="collapse-header">Series Operations:</h6>
                             <Link to="/series" className="collapse-item">Manage Series</Link>
                             <Link to="/tests" className="collapse-item">Manage Tests</Link>
+                            <Link to="/series-mcqs" className="collapse-item">Manage Series MCQs</Link>
                             <Link to="/enrollments" className="collapse-item">Manage Enrollments</Link>
                             <Link to="/payments" className="collapse-item">Manage Payments</Link>
-                            <Link to="/mcq-management" className="collapse-item">Manage MCQs</Link>
                         </div>
                     </div>
                 </li>

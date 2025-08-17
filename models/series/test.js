@@ -18,7 +18,7 @@ const testSchema = new Schema(
 
         questions: [
             {
-                questionId: { type: Schema.Types.ObjectId, ref: "MCQ", required: true },
+                questionId: { type: Schema.Types.ObjectId, ref: "SeriesMCQ", required: true },
                 marks: { type: Number, default: 1 },
             },
         ],

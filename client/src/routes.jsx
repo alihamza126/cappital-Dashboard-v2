@@ -29,9 +29,9 @@ import { McqView } from './admin/section/mcq-view/view/index.js';
 const Settings = lazy(() => import('./admin/components/settings/Settings.jsx'))
 const SeriesManagement = lazy(() => import('./admin/components/series/SeriesManagement.jsx'));
 const TestManagement = lazy(() => import('./admin/components/series/TestManagement.jsx'));
+const SeriesMcqManagement = lazy(() => import('./admin/components/series/SeriesMcqManagement.jsx'));
 const EnrollmentManagement = lazy(() => import('./admin/components/series/EnrollmentManagement.jsx'));
 const PaymentManagement = lazy(() => import('./admin/components/series/PaymentManagement.jsx'));
-const McqManagement = lazy(() => import('./admin/components/series/McqManagement.jsx'));
 
 // dashboard pages
 const DashboardLayout = lazy(() => import('./dashboard/layouts/index.jsx'));
@@ -256,6 +256,11 @@ const Routes = () => {
           element: <LazyLoader><TestManagement /></LazyLoader>
         },
         {
+          path: "series-mcqs",
+          errorElement: <CrashError />,
+          element: <LazyLoader><SeriesMcqManagement /></LazyLoader>
+        },
+        {
           path: "enrollments",
           errorElement: <CrashError />,
           element: <LazyLoader><EnrollmentManagement /></LazyLoader>
@@ -265,11 +270,6 @@ const Routes = () => {
               errorElement: <CrashError />,
               element: <LazyLoader><PaymentManagement /></LazyLoader>
             },
-            {
-              path: "mcq-management",
-              errorElement: <CrashError />,
-              element: <LazyLoader><McqManagement /></LazyLoader>
-            }
       ],
     },
     // --------------Page not found route----------------

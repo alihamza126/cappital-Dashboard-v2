@@ -34,7 +34,6 @@ import {
     ListItem,
     ListItemText,
     ListItemSecondaryAction,
-    Checkbox,
     Divider,
     Tabs,
     Tab
@@ -53,18 +52,15 @@ import {
 } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
 import axiosInstance from '../../../baseUrl';
-import McqSelector from './McqSelector';
 
 const TestManagement = () => {
     const [tests, setTests] = useState([]);
     const [series, setSeries] = useState([]);
     const [loading, setLoading] = useState(false);
     const [openDialog, setOpenDialog] = useState(false);
-    const [openMcqDialog, setOpenMcqDialog] = useState(false);
     const [editingTest, setEditingTest] = useState(null);
     const [selectedTest, setSelectedTest] = useState(null);
     const [selectedSeriesId, setSelectedSeriesId] = useState('');
-    const [selectedMcqs, setSelectedMcqs] = useState([]);
     const [tabValue, setTabValue] = useState(0);
     const { enqueueSnackbar } = useSnackbar();
 
@@ -86,7 +82,7 @@ const TestManagement = () => {
 
     const [errors, setErrors] = useState({});
 
-    const subjects = ['Biology', 'Chemistry', 'Physics', 'English', 'Mathematics', 'Logic'];
+    const subjects = ['biology', 'chemistry', 'physics', 'english', 'mathematics', 'logic'];
     const modes = ['Exam', 'Practice'];
 
     useEffect(() => {
@@ -98,8 +94,6 @@ const TestManagement = () => {
             fetchTests(selectedSeriesId);
         }
     }, [selectedSeriesId]);
-
-
 
     const fetchSeries = async () => {
         try {
@@ -122,8 +116,6 @@ const TestManagement = () => {
         }
     };
 
-
-
     const handleOpenDialog = (test = null) => {
         if (test) {
             setEditingTest(test);
@@ -139,10 +131,24 @@ const TestManagement = () => {
                     startAt: test.availability?.startAt ? new Date(test.availability.startAt).toISOString().split('T')[0] : '',
                     endAt: test.availability?.endAt ? new Date(test.availability.endAt).toISOString().split('T')[0] : ''
                 },
-                questions: test.questions || [],
+                questions: test.questions ? test.questions.map(q => ({
+                    _id: q.questionId._id,
+                    question: q.questionId.question,
+                    options: q.questionId.options,
+                    correctOption: q.questionId.correctOption,
+                    subject: q.questionId.subject,
+                    chapter: q.questionId.chapter,
+                    topic: q.questionId.topic,
+                    difficulty: q.questionId.difficulty,
+                    category: q.questionId.category,
+                    course: q.questionId.course,
+                    info: q.questionId.info || '',
+                    explain: q.questionId.explain || '',
+                    imageUrl: q.questionId.imageUrl || '',
+                    marks: q.marks
+                })) : [],
                 isPublished: test.isPublished
             });
-            setSelectedMcqs(test.questions || []);
         } else {
             setEditingTest(null);
             setFormData({
@@ -160,7 +166,6 @@ const TestManagement = () => {
                 questions: [],
                 isPublished: false
             });
-            setSelectedMcqs([]);
         }
         setErrors({});
         setOpenDialog(true);
@@ -170,19 +175,6 @@ const TestManagement = () => {
         setOpenDialog(false);
         setEditingTest(null);
         setErrors({});
-        setSelectedMcqs([]);
-    };
-
-    const handleOpenMcqDialog = () => {
-        setOpenMcqDialog(true);
-    };
-
-    const handleCloseMcqDialog = () => {
-        setOpenMcqDialog(false);
-    };
-
-    const handleMcqSelection = (selectedMcqs) => {
-        setSelectedMcqs(selectedMcqs);
     };
 
     const validateForm = () => {
@@ -192,7 +184,29 @@ const TestManagement = () => {
         if (formData.subjects.length === 0) newErrors.subjects = 'At least one subject is required';
         if (!formData.durationMin) newErrors.durationMin = 'Duration is required';
         if (!formData.totalMarks) newErrors.totalMarks = 'Total marks is required';
-        if (selectedMcqs.length === 0) newErrors.questions = 'At least one MCQ is required';
+        if (formData.questions.length === 0) newErrors.questions = 'At least one MCQ is required';
+        
+        // Validate each MCQ
+        formData.questions.forEach((mcq, index) => {
+            if (!mcq.question) {
+                newErrors[`mcq_${index}_question`] = 'Question is required';
+            }
+            if (!mcq.options || mcq.options.length !== 4 || mcq.options.some(opt => !opt)) {
+                newErrors[`mcq_${index}_options`] = 'All 4 options are required';
+            }
+            if (mcq.correctOption < 0 || mcq.correctOption > 3) {
+                newErrors[`mcq_${index}_correctOption`] = 'Correct option must be A, B, C, or D';
+            }
+            if (!mcq.subject) {
+                newErrors[`mcq_${index}_subject`] = 'Subject is required';
+            }
+            if (!mcq.chapter) {
+                newErrors[`mcq_${index}_chapter`] = 'Chapter is required';
+            }
+            if (!mcq.topic) {
+                newErrors[`mcq_${index}_topic`] = 'Topic is required';
+            }
+        });
         
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -210,25 +224,35 @@ const TestManagement = () => {
                 availability: {
                     startAt: formData.availability.startAt ? new Date(formData.availability.startAt) : undefined,
                     endAt: formData.availability.endAt ? new Date(formData.availability.endAt) : undefined
-                },
-                questions: selectedMcqs.map(mcq => ({
-                    questionId: mcq._id,
-                    marks: 1 // Default marks per question
-                }))
+                }
             };
 
+            console.log('Submitting test data:', {
+                editing: !!editingTest,
+                testId: editingTest?._id,
+                questionsCount: submitData.questions?.length,
+                questions: submitData.questions?.map(q => ({
+                    id: q._id,
+                    question: q.question?.substring(0, 30) + '...',
+                    options: q.options?.length
+                }))
+            });
+
             if (editingTest) {
-                await axiosInstance.put(`/tests/${editingTest._id}`, submitData);
+                const response = await axiosInstance.put(`/tests/${editingTest._id}`, submitData);
+                console.log('Test update response:', response.data);
                 enqueueSnackbar('Test updated successfully', { variant: 'success' });
             } else {
-                await axiosInstance.post('/tests', submitData);
+                const response = await axiosInstance.post('/tests', submitData);
+                console.log('Test create response:', response.data);
                 enqueueSnackbar('Test created successfully', { variant: 'success' });
             }
 
             handleCloseDialog();
             fetchTests(selectedSeriesId);
         } catch (error) {
-            enqueueSnackbar(error.response?.data?.error || 'Operation failed', { variant: 'error' });
+            console.error('Test operation error:', error.response?.data || error);
+            enqueueSnackbar(error.response?.data?.error || error.response?.data?.details || 'Operation failed', { variant: 'error' });
         } finally {
             setLoading(false);
         }
@@ -266,12 +290,54 @@ const TestManagement = () => {
         setFormData({ ...formData, subjects: event.target.value });
     };
 
-
-
-
-
     const handleTabChange = (event, newValue) => {
         setTabValue(newValue);
+    };
+
+    // MCQ Management Functions
+    const addMcq = () => {
+        const newMcq = {
+            _id: Date.now().toString(), // Temporary ID for new MCQ
+            question: '',
+            options: ['', '', '', ''],
+            correctOption: 0,
+            subject: '',
+            chapter: '',
+            topic: '',
+            difficulty: 'easy',
+            category: 'normal',
+            course: 'mdcat',
+            info: '',
+            explain: '',
+            imageUrl: '',
+            marks: 1
+        };
+        setFormData({
+            ...formData,
+            questions: [...formData.questions, newMcq]
+        });
+    };
+
+    const updateMcq = (index, field, value) => {
+        const updatedQuestions = [...formData.questions];
+        if (field.startsWith('option')) {
+            const optionIndex = parseInt(field.slice(-1)) - 1;
+            updatedQuestions[index].options[optionIndex] = value;
+        } else {
+            updatedQuestions[index][field] = value;
+        }
+        setFormData({
+            ...formData,
+            questions: updatedQuestions
+        });
+    };
+
+    const removeMcq = (index) => {
+        const updatedQuestions = formData.questions.filter((_, i) => i !== index);
+        setFormData({
+            ...formData,
+            questions: updatedQuestions
+        });
     };
 
     const getStatsCard = (title, value, icon, color) => (
@@ -475,7 +541,7 @@ const TestManagement = () => {
                 <DialogContent>
                     <Tabs value={tabValue} onChange={handleTabChange} sx={{ mb: 2 }}>
                         <Tab label="Test Details" />
-                        <Tab label="MCQ Selection" />
+                        <Tab label="MCQ Management" />
                     </Tabs>
 
                     {tabValue === 0 && (
@@ -609,14 +675,14 @@ const TestManagement = () => {
                         <Box>
                             <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <Typography variant="h6">
-                                    Selected MCQs: {selectedMcqs.length}
+                                    MCQs: {formData.questions.length}
                                 </Typography>
                                 <Button
                                     variant="outlined"
                                     startIcon={<Add />}
-                                    onClick={handleOpenMcqDialog}
+                                    onClick={addMcq}
                                 >
-                                    Add MCQs
+                                    Add MCQ
                                 </Button>
                             </Box>
                             
@@ -626,54 +692,185 @@ const TestManagement = () => {
                                 </Alert>
                             )}
 
-                            {selectedMcqs.length > 0 ? (
+                            {formData.questions.length > 0 ? (
                                 <List>
-                                    {selectedMcqs.map((mcq, index) => (
-                                        <React.Fragment key={mcq._id}>
-                                            <ListItem>
-                                                <ListItemText
-                                                    primary={
-                                                        <Typography variant="body2">
-                                                            {index + 1}. {mcq.question}
-                                                        </Typography>
-                                                    }
-                                                    secondary={
-                                                        <Box>
-                                                            <Typography variant="caption" color="textSecondary">
-                                                                Subject: {mcq.subject} | Chapter: {mcq.chapter} | Difficulty: {mcq.difficulty}
-                                                            </Typography>
-                                                            <Box sx={{ mt: 1 }}>
-                                                                {mcq.options.map((option, optIndex) => (
-                                                                    <Typography 
-                                                                        key={optIndex} 
-                                                                        variant="caption" 
-                                                                        color={optIndex === mcq.correctOption ? 'success.main' : 'text.secondary'}
-                                                                        sx={{ display: 'block' }}
-                                                                    >
-                                                                        {String.fromCharCode(65 + optIndex)}. {option}
-                                                                    </Typography>
+                                    {formData.questions.map((mcq, index) => (
+                                        <Accordion key={mcq._id || index}>
+                                            <AccordionSummary expandIcon={<ExpandMore />}>
+                                                <Typography>
+                                                    MCQ {index + 1}: {mcq.question || 'New Question'}
+                                                </Typography>
+                                            </AccordionSummary>
+                                            <AccordionDetails>
+                                                <Grid container spacing={2}>
+                                                    <Grid item xs={12}>
+                                                        <TextField
+                                                            fullWidth
+                                                            label="Question"
+                                                            value={mcq.question}
+                                                            onChange={(e) => updateMcq(index, 'question', e.target.value)}
+                                                            multiline
+                                                            rows={3}
+                                                            error={!!errors[`mcq_${index}_question`]}
+                                                            helperText={errors[`mcq_${index}_question`]}
+                                                        />
+                                                    </Grid>
+                                                    <Grid item xs={12} sm={6}>
+                                                        <TextField
+                                                            fullWidth
+                                                            label="Option A"
+                                                            value={mcq.options[0]}
+                                                            onChange={(e) => updateMcq(index, 'option1', e.target.value)}
+                                                            error={!!errors[`mcq_${index}_options`]}
+                                                        />
+                                                    </Grid>
+                                                    <Grid item xs={12} sm={6}>
+                                                        <TextField
+                                                            fullWidth
+                                                            label="Option B"
+                                                            value={mcq.options[1]}
+                                                            onChange={(e) => updateMcq(index, 'option2', e.target.value)}
+                                                            error={!!errors[`mcq_${index}_options`]}
+                                                        />
+                                                    </Grid>
+                                                    <Grid item xs={12} sm={6}>
+                                                        <TextField
+                                                            fullWidth
+                                                            label="Option C"
+                                                            value={mcq.options[2]}
+                                                            onChange={(e) => updateMcq(index, 'option3', e.target.value)}
+                                                            error={!!errors[`mcq_${index}_options`]}
+                                                        />
+                                                    </Grid>
+                                                    <Grid item xs={12} sm={6}>
+                                                        <TextField
+                                                            fullWidth
+                                                            label="Option D"
+                                                            value={mcq.options[3]}
+                                                            onChange={(e) => updateMcq(index, 'option4', e.target.value)}
+                                                            error={!!errors[`mcq_${index}_options`]}
+                                                        />
+                                                    </Grid>
+                                                    {errors[`mcq_${index}_options`] && (
+                                                        <Grid item xs={12}>
+                                                            <Alert severity="error" sx={{ mt: 1 }}>
+                                                                {errors[`mcq_${index}_options`]}
+                                                            </Alert>
+                                                        </Grid>
+                                                    )}
+                                                    <Grid item xs={12} sm={6}>
+                                                        <FormControl fullWidth error={!!errors[`mcq_${index}_correctOption`]}>
+                                                            <InputLabel>Correct Option</InputLabel>
+                                                            <Select
+                                                                value={mcq.correctOption}
+                                                                onChange={(e) => updateMcq(index, 'correctOption', e.target.value)}
+                                                            >
+                                                                <MenuItem value={0}>A</MenuItem>
+                                                                <MenuItem value={1}>B</MenuItem>
+                                                                <MenuItem value={2}>C</MenuItem>
+                                                                <MenuItem value={3}>D</MenuItem>
+                                                            </Select>
+                                                        </FormControl>
+                                                    </Grid>
+                                                    {errors[`mcq_${index}_correctOption`] && (
+                                                        <Grid item xs={12}>
+                                                            <Alert severity="error" sx={{ mt: 1 }}>
+                                                                {errors[`mcq_${index}_correctOption`]}
+                                                            </Alert>
+                                                        </Grid>
+                                                    )}
+                                                    <Grid item xs={12} sm={6}>
+                                                        <FormControl fullWidth error={!!errors[`mcq_${index}_subject`]}>
+                                                            <InputLabel>Subject</InputLabel>
+                                                            <Select
+                                                                value={mcq.subject}
+                                                                onChange={(e) => updateMcq(index, 'subject', e.target.value)}
+                                                            >
+                                                                {subjects.map((subject) => (
+                                                                    <MenuItem key={subject} value={subject}>
+                                                                        {subject.charAt(0).toUpperCase() + subject.slice(1)}
+                                                                    </MenuItem>
                                                                 ))}
-                                                            </Box>
-                                                        </Box>
-                                                    }
-                                                />
-                                                <ListItemSecondaryAction>
-                                                    <IconButton
-                                                        edge="end"
-                                                        onClick={() => setSelectedMcqs(selectedMcqs.filter(m => m._id !== mcq._id))}
-                                                        color="error"
-                                                    >
-                                                        <Delete />
-                                                    </IconButton>
-                                                </ListItemSecondaryAction>
-                                            </ListItem>
-                                            {index < selectedMcqs.length - 1 && <Divider />}
-                                        </React.Fragment>
+                                                            </Select>
+                                                        </FormControl>
+                                                    </Grid>
+                                                    {errors[`mcq_${index}_subject`] && (
+                                                        <Grid item xs={12}>
+                                                            <Alert severity="error" sx={{ mt: 1 }}>
+                                                                {errors[`mcq_${index}_subject`]}
+                                                            </Alert>
+                                                        </Grid>
+                                                    )}
+                                                    <Grid item xs={12} sm={6}>
+                                                        <TextField
+                                                            fullWidth
+                                                            label="Chapter"
+                                                            value={mcq.chapter}
+                                                            onChange={(e) => updateMcq(index, 'chapter', e.target.value)}
+                                                            error={!!errors[`mcq_${index}_chapter`]}
+                                                            helperText={errors[`mcq_${index}_chapter`]}
+                                                        />
+                                                    </Grid>
+                                                    <Grid item xs={12} sm={6}>
+                                                        <TextField
+                                                            fullWidth
+                                                            label="Topic"
+                                                            value={mcq.topic}
+                                                            onChange={(e) => updateMcq(index, 'topic', e.target.value)}
+                                                            error={!!errors[`mcq_${index}_topic`]}
+                                                            helperText={errors[`mcq_${index}_topic`]}
+                                                        />
+                                                    </Grid>
+                                                    <Grid item xs={12} sm={6}>
+                                                        <FormControl fullWidth>
+                                                            <InputLabel>Difficulty</InputLabel>
+                                                            <Select
+                                                                value={mcq.difficulty}
+                                                                onChange={(e) => updateMcq(index, 'difficulty', e.target.value)}
+                                                            >
+                                                                <MenuItem value="easy">Easy</MenuItem>
+                                                                <MenuItem value="medium">Medium</MenuItem>
+                                                                <MenuItem value="hard">Hard</MenuItem>
+                                                            </Select>
+                                                        </FormControl>
+                                                    </Grid>
+                                                    <Grid item xs={12} sm={6}>
+                                                        <TextField
+                                                            fullWidth
+                                                            label="Marks"
+                                                            type="number"
+                                                            value={mcq.marks}
+                                                            onChange={(e) => updateMcq(index, 'marks', Number(e.target.value))}
+                                                        />
+                                                    </Grid>
+                                                    <Grid item xs={12}>
+                                                        <TextField
+                                                            fullWidth
+                                                            label="Explanation"
+                                                            value={mcq.explain}
+                                                            onChange={(e) => updateMcq(index, 'explain', e.target.value)}
+                                                            multiline
+                                                            rows={2}
+                                                        />
+                                                    </Grid>
+                                                    <Grid item xs={12}>
+                                                        <Button
+                                                            variant="outlined"
+                                                            color="error"
+                                                            onClick={() => removeMcq(index)}
+                                                            startIcon={<Delete />}
+                                                        >
+                                                            Remove MCQ
+                                                        </Button>
+                                                    </Grid>
+                                                </Grid>
+                                            </AccordionDetails>
+                                        </Accordion>
                                     ))}
                                 </List>
                             ) : (
                                 <Alert severity="info">
-                                    No MCQs selected. Click "Add MCQs" to select questions for this test.
+                                    No MCQs added yet. Click "Add MCQ" to create questions for this test.
                                 </Alert>
                             )}
                         </Box>
@@ -691,15 +888,6 @@ const TestManagement = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
-
-            {/* MCQ Selection Dialog */}
-            <McqSelector
-                open={openMcqDialog}
-                onClose={handleCloseMcqDialog}
-                onSelect={handleMcqSelection}
-                selectedMcqs={selectedMcqs}
-                subjects={subjects}
-            />
 
             {/* Test Details Dialog */}
             <Dialog open={!!selectedTest} onClose={() => setSelectedTest(null)} maxWidth="md" fullWidth>
