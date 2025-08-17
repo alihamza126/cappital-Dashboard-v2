@@ -96,8 +96,9 @@ const SeriesMcqManagement = () => {
 
     const fetchSeries = async () => {
         try {
-            const response = await axiosInstance.get('/series');
-            setSeries(response.data);
+            const response = await axiosInstance.get('/series/all');
+            console.log(response.data);
+            setSeries(response.data || []);
         } catch (error) {
             console.error('Error fetching series:', error);
             enqueueSnackbar('Failed to fetch series', { variant: 'error' });
@@ -107,7 +108,7 @@ const SeriesMcqManagement = () => {
     const fetchTests = async (seriesId) => {
         try {
             const response = await axiosInstance.get(`/tests/series/${seriesId}`);
-            setTests(response.data);
+            setTests(response.data||[]);
         } catch (error) {
             console.error('Error fetching tests:', error);
             enqueueSnackbar('Failed to fetch tests', { variant: 'error' });
@@ -116,7 +117,7 @@ const SeriesMcqManagement = () => {
 
     const fetchMcqs = async () => {
         if (!selectedSeries) return;
-        
+
         setLoading(true);
         try {
             const params = new URLSearchParams({
@@ -126,9 +127,9 @@ const SeriesMcqManagement = () => {
             });
 
             const response = await axiosInstance.get(`/series-mcqs/series/${selectedSeries}?${params}`);
-            setMcqs(response.data.mcqs);
-            setAllMcqs(response.data.mcqs);
-            setTotal(response.data.total);
+            setMcqs(response.data.mcqs||[]);
+            setAllMcqs(response.data.mcqs||[]);
+            setTotal(response.data.total||0);
         } catch (error) {
             console.error('Error fetching MCQs:', error);
             enqueueSnackbar('Failed to fetch MCQs', { variant: 'error' });
@@ -154,12 +155,12 @@ const SeriesMcqManagement = () => {
             filtered = filtered.filter(mcq => mcq.subject === filters.subject);
         }
         if (filters.chapter) {
-            filtered = filtered.filter(mcq => 
+            filtered = filtered.filter(mcq =>
                 mcq.chapter.toLowerCase().includes(filters.chapter.toLowerCase())
             );
         }
         if (filters.topic) {
-            filtered = filtered.filter(mcq => 
+            filtered = filtered.filter(mcq =>
                 mcq.topic.toLowerCase().includes(filters.topic.toLowerCase())
             );
         }
@@ -305,7 +306,7 @@ const SeriesMcqManagement = () => {
                                     onChange={(e) => setSelectedSeries(e.target.value)}
                                     label="Select Series"
                                 >
-                                    {series.map((s) => (
+                                    {series && series?.map((s) => (
                                         <MenuItem key={s._id} value={s._id}>
                                             {s.title}
                                         </MenuItem>
@@ -322,7 +323,7 @@ const SeriesMcqManagement = () => {
                                     label="Select Test (Optional)"
                                 >
                                     <MenuItem value="">All Tests</MenuItem>
-                                    {tests.map((t) => (
+                                    {tests?.map((t) => (
                                         <MenuItem key={t._id} value={t._id}>
                                             {t.title}
                                         </MenuItem>
@@ -446,7 +447,7 @@ const SeriesMcqManagement = () => {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {mcqs.map((mcq) => (
+                        {mcqs?.map((mcq) => (
                             <TableRow key={mcq._id}>
                                 <TableCell>
                                     <Typography variant="body2" noWrap sx={{ maxWidth: 200 }}>
@@ -459,12 +460,12 @@ const SeriesMcqManagement = () => {
                                 <TableCell>{mcq.chapter}</TableCell>
                                 <TableCell>{mcq.topic}</TableCell>
                                 <TableCell>
-                                    <Chip 
-                                        label={mcq.difficulty} 
+                                    <Chip
+                                        label={mcq.difficulty}
                                         size="small"
                                         color={
                                             mcq.difficulty === 'easy' ? 'success' :
-                                            mcq.difficulty === 'medium' ? 'warning' : 'error'
+                                                mcq.difficulty === 'medium' ? 'warning' : 'error'
                                         }
                                     />
                                 </TableCell>
@@ -512,7 +513,7 @@ const SeriesMcqManagement = () => {
                             />
                         </Grid>
 
-                        {formData.options.map((option, index) => (
+                        {formData?.options?.map((option, index) => (
                             <Grid item xs={12} md={6} key={index}>
                                 <TextField
                                     fullWidth
@@ -521,7 +522,7 @@ const SeriesMcqManagement = () => {
                                     onChange={(e) => handleOptionChange(index, e.target.value)}
                                     InputProps={{
                                         endAdornment: (
-                                            <Chip 
+                                            <Chip
                                                 label={formData.correctOption === index ? 'Correct' : ''}
                                                 color={formData.correctOption === index ? 'success' : 'default'}
                                                 size="small"
@@ -540,7 +541,7 @@ const SeriesMcqManagement = () => {
                                     onChange={(e) => setFormData({ ...formData, correctOption: e.target.value })}
                                     label="Correct Option"
                                 >
-                                    {formData.options.map((_, index) => (
+                                    {formData?.options?.map((_, index) => (
                                         <MenuItem key={index} value={index}>
                                             Option {index + 1}
                                         </MenuItem>
