@@ -194,7 +194,7 @@ const TestManagement = () => {
             if (!mcq.options || mcq.options.length !== 4 || mcq.options.some(opt => !opt)) {
                 newErrors[`mcq_${index}_options`] = 'All 4 options are required';
             }
-            if (mcq.correctOption < 0 || mcq.correctOption > 3) {
+            if (mcq.correctOption < 0 || mcq.correctOption > 4) {
                 newErrors[`mcq_${index}_correctOption`] = 'Correct option must be A, B, C, or D';
             }
             if (!mcq.subject) {
@@ -765,10 +765,10 @@ const TestManagement = () => {
                                                                 value={mcq.correctOption}
                                                                 onChange={(e) => updateMcq(index, 'correctOption', e.target.value)}
                                                             >
-                                                                <MenuItem value={0}>A</MenuItem>
-                                                                <MenuItem value={1}>B</MenuItem>
-                                                                <MenuItem value={2}>C</MenuItem>
-                                                                <MenuItem value={3}>D</MenuItem>
+                                                                <MenuItem value={1}>A</MenuItem>
+                                                                <MenuItem value={2}>B</MenuItem>
+                                                                <MenuItem value={3}>C</MenuItem>
+                                                                <MenuItem value={4}>D</MenuItem>
                                                             </Select>
                                                         </FormControl>
                                                     </Grid>

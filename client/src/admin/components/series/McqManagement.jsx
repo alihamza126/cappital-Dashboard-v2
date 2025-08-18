@@ -615,10 +615,10 @@ const McqManagement = () => {
                                         onChange={handleChange}
                                         name="correctOption"
                                     >
-                                        <MenuItem value={0}>A</MenuItem>
-                                        <MenuItem value={1}>B</MenuItem>
-                                        <MenuItem value={2}>C</MenuItem>
-                                        <MenuItem value={3}>D</MenuItem>
+                                        <MenuItem value={1}>A</MenuItem>
+                                        <MenuItem value={2}>B</MenuItem>
+                                        <MenuItem value={3}>C</MenuItem>
+                                        <MenuItem value={4}>D</MenuItem>
                                     </Select>
                                     {errors.correctOption && (
                                         <Typography variant="caption" color="error">
