@@ -28,6 +28,8 @@ import {
   Paper,
   TablePagination,
   InputAdornment,
+  Tabs,
+  Tab,
 } from "@mui/material"
 import {
   Add as AddIcon,
@@ -35,9 +37,13 @@ import {
   Delete as DeleteIcon,
   Search as SearchIcon,
   Clear as ClearIcon,
+  CloudUpload,
+  Image,
 } from "@mui/icons-material"
 import { useSnackbar } from "notistack"
 import axiosInstance from "../../../baseUrl"
+import Lightbox from 'yet-another-react-lightbox'
+import 'yet-another-react-lightbox/styles.css'
 
 const SeriesMcqManagement = () => {
   const [mcqs, setMcqs] = useState([])
@@ -53,19 +59,26 @@ const SeriesMcqManagement = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10)
   const [total, setTotal] = useState(0)
   const [filters, setFilters] = useState({
-    subject: "",
+    subject: [],
     chapter: "",
     topic: "",
     difficulty: "",
   })
   const [searchTerm, setSearchTerm] = useState("")
+  const [tabValue, setTabValue] = useState(0)
+  const [image, setImage] = useState(null)
+  const [imageUrl, setImageUrl] = useState("")
+  const [questionImage, setQuestionImage] = useState(null)
+  const [questionImageUrl, setQuestionImageUrl] = useState("")
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [lightboxImages, setLightboxImages] = useState([])
   const { enqueueSnackbar } = useSnackbar()
 
   const [formData, setFormData] = useState({
     question: "",
     options: ["", "", "", ""],
     correctOption: 0,
-    subject: "",
+    subject: [],
     chapter: "",
     topic: "",
     difficulty: "easy",
@@ -74,6 +87,7 @@ const SeriesMcqManagement = () => {
     info: "",
     explain: "",
     imageUrl: "",
+    questionImg: "",
     seriesId: "",
     testId: "",
   })
@@ -103,7 +117,7 @@ const SeriesMcqManagement = () => {
 
   useEffect(() => {
     applyFilters()
-  }, [filters, searchTerm, allMcqs])
+  }, [filters, searchTerm, allMcqs, selectedTest])
 
   const fetchSeries = async () => {
     try {
@@ -138,7 +152,7 @@ const SeriesMcqManagement = () => {
     try {
       const params = new URLSearchParams({
         page: page + 1,
-        limit: rowsPerPage,
+        limit: 1000, // Fetch all MCQs for local filtering
         ...filters,
       })
 
@@ -148,7 +162,7 @@ const SeriesMcqManagement = () => {
       setTotal(response.data.total || 0)
     } catch (error) {
       console.error("Error fetching MCQs:", error)
-      enqueueSnackbar("Failed to save MCQ", { variant: "error" })
+      enqueueSnackbar("Failed to fetch MCQs", { variant: "error" })
       setMcqs([])
       setAllMcqs([])
       setTotal(0)
@@ -160,6 +174,11 @@ const SeriesMcqManagement = () => {
   const applyFilters = () => {
     let filtered = [...allMcqs]
 
+    // Filter by selected test (local filtering)
+    if (selectedTest) {
+      filtered = filtered.filter((mcq) => mcq.testId?._id === selectedTest)
+    }
+
     if (searchTerm) {
       filtered = filtered.filter(
         (mcq) =>
@@ -169,8 +188,11 @@ const SeriesMcqManagement = () => {
       )
     }
 
-    if (filters.subject) {
-      filtered = filtered.filter((mcq) => mcq.subject === filters.subject)
+    if (filters.subject && filters.subject.length > 0) {
+      filtered = filtered.filter((mcq) => {
+        const mcqSubjects = Array.isArray(mcq.subject) ? mcq.subject : [mcq.subject];
+        return filters.subject.some(filterSubject => mcqSubjects.includes(filterSubject));
+      });
     }
     if (filters.chapter) {
       filtered = filtered.filter((mcq) => mcq.chapter.toLowerCase().includes(filters.chapter.toLowerCase()))
@@ -183,6 +205,7 @@ const SeriesMcqManagement = () => {
     }
 
     setMcqs(filtered)
+    setTotal(filtered.length)
   }
 
   const handleOpenDialog = (mcq = null) => {
@@ -192,7 +215,7 @@ const SeriesMcqManagement = () => {
         question: mcq.question,
         options: mcq.options,
         correctOption: mcq.correctOption,
-        subject: mcq.subject,
+        subject: Array.isArray(mcq.subject) ? mcq.subject : [mcq.subject],
         chapter: mcq.chapter,
         topic: mcq.topic,
         difficulty: mcq.difficulty,
@@ -201,16 +224,19 @@ const SeriesMcqManagement = () => {
         info: mcq.info || "",
         explain: mcq.explain || "",
         imageUrl: mcq.imageUrl || "",
+        questionImg: mcq.questionImg || "",
         seriesId: mcq.seriesId,
         testId: mcq.testId || "",
       })
+      setImageUrl(mcq.imageUrl || "")
+      setQuestionImageUrl(mcq.questionImg || "")
     } else {
       setEditingMcq(null)
       setFormData({
         question: "",
         options: ["", "", "", ""],
         correctOption: 0,
-        subject: "",
+        subject: [],
         chapter: "",
         topic: "",
         difficulty: "easy",
@@ -219,21 +245,29 @@ const SeriesMcqManagement = () => {
         info: "",
         explain: "",
         imageUrl: "",
+        questionImg: "",
         seriesId: selectedSeries,
         testId: selectedTest,
       })
+      setImageUrl("")
+      setQuestionImageUrl("")
     }
+    setTabValue(0)
     setOpenDialog(true)
   }
 
   const handleCloseDialog = () => {
     setOpenDialog(false)
     setEditingMcq(null)
+    setImage(null)
+    setImageUrl("")
+    setQuestionImage(null)
+    setQuestionImageUrl("")
     setFormData({
       question: "",
       options: ["", "", "", ""],
       correctOption: 0,
-      subject: "",
+      subject: [],
       chapter: "",
       topic: "",
       difficulty: "easy",
@@ -242,18 +276,83 @@ const SeriesMcqManagement = () => {
       info: "",
       explain: "",
       imageUrl: "",
+      questionImg: "",
       seriesId: "",
       testId: "",
     })
   }
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      setImage(file)
+      setImageUrl(URL.createObjectURL(file))
+    }
+  }
+
+  const handleQuestionImageChange = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      setQuestionImage(file)
+      setQuestionImageUrl(URL.createObjectURL(file))
+    }
+  }
+
+  const handleTabChange = (event, newValue) => {
+    setTabValue(newValue)
+  }
+
+  const openLightbox = (images, startIndex = 0) => {
+    setLightboxImages(images)
+    setLightboxOpen(true)
+  }
+
   const handleSubmit = async () => {
     try {
+      setLoading(true)
+      let finalFormData = { ...formData }
+
+      // Upload MCQ image if selected
+      if (image) {
+        const formImgData = new FormData()
+        formImgData.append('image', image)
+        const config = {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          }
+        }
+        const imgResponse = await axiosInstance.post('/upload/img', formImgData, config)
+        if (imgResponse.status === 200) {
+          finalFormData.imageUrl = imgResponse.data.fileURL
+        } else {
+          enqueueSnackbar('Failed to upload MCQ image', { variant: 'error' })
+          return
+        }
+      }
+
+      // Upload question image if selected
+      if (questionImage) {
+        const formImgData = new FormData()
+        formImgData.append('image', questionImage)
+        const config = {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          }
+        }
+        const imgResponse = await axiosInstance.post('/upload/img', formImgData, config)
+        if (imgResponse.status === 200) {
+          finalFormData.questionImg = imgResponse.data.fileURL
+        } else {
+          enqueueSnackbar('Failed to upload question image', { variant: 'error' })
+          return
+        }
+      }
+
       if (editingMcq) {
-        await axiosInstance.put(`/series-mcqs/${editingMcq._id}`, formData)
+        await axiosInstance.put(`/series-mcqs/${editingMcq._id}`, finalFormData)
         enqueueSnackbar("MCQ updated successfully", { variant: "success" })
       } else {
-        await axiosInstance.post("/series-mcqs", formData)
+        await axiosInstance.post("/series-mcqs", finalFormData)
         enqueueSnackbar("MCQ created successfully", { variant: "success" })
       }
       handleCloseDialog()
@@ -261,6 +360,8 @@ const SeriesMcqManagement = () => {
     } catch (error) {
       console.error("Error saving MCQ:", error)
       enqueueSnackbar("Failed to save MCQ", { variant: "error" })
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -285,12 +386,13 @@ const SeriesMcqManagement = () => {
 
   const clearFilters = () => {
     setFilters({
-      subject: "",
+      subject: [],
       chapter: "",
       topic: "",
       difficulty: "",
     })
     setSearchTerm("")
+    setSelectedTest("")
   }
 
   const handleChangePage = (event, newPage) => {
@@ -330,11 +432,11 @@ const SeriesMcqManagement = () => {
             </Grid>
             <Grid item xs={12} md={6}>
               <FormControl fullWidth>
-                <InputLabel>Select Test (Optional)</InputLabel>
+                <InputLabel>Filter by Test (Optional)</InputLabel>
                 <Select
                   value={selectedTest}
                   onChange={(e) => setSelectedTest(e.target.value)}
-                  label="Select Test (Optional)"
+                  label="Filter by Test (Optional)"
                 >
                   <MenuItem value="">All Tests</MenuItem>
                   {tests?.map((t) => (
@@ -371,11 +473,12 @@ const SeriesMcqManagement = () => {
               <FormControl fullWidth>
                 <InputLabel>Subject</InputLabel>
                 <Select
+                  multiple
                   value={filters.subject}
                   onChange={(e) => setFilters({ ...filters, subject: e.target.value })}
                   label="Subject"
+                  renderValue={(selected) => selected.join(', ')}
                 >
-                  <MenuItem value="">All</MenuItem>
                   <MenuItem value="physics">Physics</MenuItem>
                   <MenuItem value="chemistry">Chemistry</MenuItem>
                   <MenuItem value="biology">Biology</MenuItem>
@@ -432,6 +535,9 @@ const SeriesMcqManagement = () => {
           {selectedSeries &&
             series.find((s) => s._id === selectedSeries) &&
             `(${series.find((s) => s._id === selectedSeries).title})`}
+          {selectedTest &&
+            tests.find((t) => t._id === selectedTest) &&
+            ` - Test: ${tests.find((t) => t._id === selectedTest).title}`}
         </Typography>
         <Button
           variant="contained"
@@ -462,19 +568,21 @@ const SeriesMcqManagement = () => {
                 <TableCell>Topic</TableCell>
                 <TableCell>Difficulty</TableCell>
                 <TableCell>Test</TableCell>
+                <TableCell>Explanation Image</TableCell>
+                <TableCell>Question Image</TableCell>
                 <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={7} sx={{ textAlign: "center", py: 4 }}>
+                  <TableCell colSpan={9} sx={{ textAlign: "center", py: 4 }}>
                     <Typography>Loading MCQs...</Typography>
                   </TableCell>
                 </TableRow>
               ) : mcqs.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} sx={{ textAlign: "center", py: 4 }}>
+                  <TableCell colSpan={9} sx={{ textAlign: "center", py: 4 }}>
                     <Typography color="text.secondary">No MCQs found for this series</Typography>
                   </TableCell>
                 </TableRow>
@@ -487,7 +595,21 @@ const SeriesMcqManagement = () => {
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      <Chip label={mcq.subject.charAt(0).toUpperCase() + mcq.subject.slice(1)} size="small" />
+                      {Array.isArray(mcq.subject) ? (
+                        mcq.subject.map((subj, index) => (
+                          <Chip
+                            key={index}
+                            label={subj.charAt(0).toUpperCase() + subj.slice(1)}
+                            size="small"
+                            sx={{ mr: 0.5, mb: 0.5 }}
+                          />
+                        ))
+                      ) : (
+                        <Chip
+                          label={mcq.subject.charAt(0).toUpperCase() + mcq.subject.slice(1)}
+                          size="small"
+                        />
+                      )}
                     </TableCell>
                     <TableCell>{mcq.chapter}</TableCell>
                     <TableCell>{mcq.topic}</TableCell>
@@ -501,6 +623,30 @@ const SeriesMcqManagement = () => {
                       />
                     </TableCell>
                     <TableCell>{mcq.testId?.title || "Not assigned"}</TableCell>
+                    <TableCell>
+                      {mcq.imageUrl ? (
+                        <img
+                          src={mcq.imageUrl}
+                          alt="MCQ"
+                          style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 4, cursor: 'pointer' }}
+                          onClick={() => openLightbox([{ src: mcq.imageUrl }], 0)}
+                        />
+                      ) : (
+                        <Typography variant="caption" color="text.secondary">No image</Typography>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {mcq.questionImg ? (
+                        <img
+                          src={mcq.questionImg}
+                          alt="Question"
+                          style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 4, cursor: 'pointer' }}
+                          onClick={() => openLightbox([{ src: mcq.questionImg }], 0)}
+                        />
+                      ) : (
+                        <Typography variant="caption" color="text.secondary">No image</Typography>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <IconButton onClick={() => handleOpenDialog(mcq)}>
                         <EditIcon />
@@ -529,194 +675,295 @@ const SeriesMcqManagement = () => {
       <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
         <DialogTitle>{editingMcq ? "Edit MCQ" : "Add New MCQ"}</DialogTitle>
         <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Question"
-                multiline
-                rows={3}
-                value={formData.question}
-                onChange={(e) => setFormData({ ...formData, question: e.target.value })}
-              />
-            </Grid>
+          <Tabs value={tabValue} onChange={handleTabChange} sx={{ mb: 2 }}>
+            <Tab label="MCQ Details" />
+            <Tab label="Explanation Image" />
+            <Tab label="Question Image" />
+          </Tabs>
 
-            {formData?.options?.map((option, index) => (
-              <Grid item xs={12} md={6} key={index}>
+          {tabValue === 0 && (
+            <Grid container spacing={2} sx={{ mt: 1 }}>
+              <Grid item xs={12}>
                 <TextField
                   fullWidth
-                  label={`Option ${index + 1}`}
-                  value={option}
-                  onChange={(e) => handleOptionChange(index, e.target.value)}
-                  InputProps={{
-                    endAdornment: (
-                      <Chip
-                        label={formData.correctOption === index ? "Correct" : ""}
-                        color={formData.correctOption === index ? "success" : "default"}
-                        size="small"
-                      />
-                    ),
-                  }}
+                  label="Question"
+                  multiline
+                  rows={3}
+                  value={formData.question}
+                  onChange={(e) => setFormData({ ...formData, question: e.target.value })}
                 />
               </Grid>
-            ))}
 
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
-                <InputLabel>Correct Option</InputLabel>
-                <Select
-                  value={formData.correctOption}
-                  onChange={(e) => setFormData({ ...formData, correctOption: e.target.value })}
-                  label="Correct Option"
-                >
-                  {formData?.options?.map((_, index) => (
-                    <MenuItem key={index} value={index}>
-                      Option {index + 1}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              {formData?.options?.map((option, index) => (
+                <Grid item xs={12} md={6} key={index}>
+                  <TextField
+                    fullWidth
+                    label={`Option ${index + 1}`}
+                    value={option}
+                    onChange={(e) => handleOptionChange(index, e.target.value)}
+                    InputProps={{
+                      endAdornment: (
+                        <Chip
+                          label={formData.correctOption === index ? "Correct" : ""}
+                          color={formData.correctOption === index ? "success" : "default"}
+                          size="small"
+                        />
+                      ),
+                    }}
+                  />
+                </Grid>
+              ))}
+
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Correct Option</InputLabel>
+                  <Select
+                    value={formData.correctOption}
+                    onChange={(e) => setFormData({ ...formData, correctOption: e.target.value })}
+                    label="Correct Option"
+                  >
+                    {formData?.options?.map((_, index) => (
+                      <MenuItem key={index} value={index}>
+                        Option {index + 1}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Subject</InputLabel>
+                  <Select
+                    multiple
+                    value={formData.subject}
+                    onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                    label="Subject"
+                    renderValue={(selected) => selected.join(', ')}
+                  >
+                    <MenuItem value="physics">Physics</MenuItem>
+                    <MenuItem value="chemistry">Chemistry</MenuItem>
+                    <MenuItem value="biology">Biology</MenuItem>
+                    <MenuItem value="english">English</MenuItem>
+                    <MenuItem value="mathematics">Mathematics</MenuItem>
+                    <MenuItem value="logic">Logic</MenuItem>
+                    <MenuItem value="others">Others</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Chapter"
+                  value={formData.chapter}
+                  onChange={(e) => setFormData({ ...formData, chapter: e.target.value })}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Topic"
+                  value={formData.topic}
+                  onChange={(e) => setFormData({ ...formData, topic: e.target.value })}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={4}>
+                <FormControl fullWidth>
+                  <InputLabel>Difficulty</InputLabel>
+                  <Select
+                    value={formData.difficulty}
+                    onChange={(e) => setFormData({ ...formData, difficulty: e.target.value })}
+                    label="Difficulty"
+                  >
+                    <MenuItem value="easy">Easy</MenuItem>
+                    <MenuItem value="medium">Medium</MenuItem>
+                    <MenuItem value="hard">Hard</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={12} md={4}>
+                <FormControl fullWidth>
+                  <InputLabel>Category</InputLabel>
+                  <Select
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    label="Category"
+                  >
+                    <MenuItem value="normal">Normal</MenuItem>
+                    <MenuItem value="critical">Critical</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={12} md={4}>
+                <FormControl fullWidth>
+                  <InputLabel>Series</InputLabel>
+                  <Select
+                    value={formData.seriesId}
+                    onChange={(e) => setFormData({ ...formData, seriesId: e.target.value })}
+                    label="Series"
+                    disabled={!!selectedSeries}
+                  >
+                    {series?.map((s) => (
+                      <MenuItem key={s._id} value={s._id}>
+                        {s.title}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Test (Optional)</InputLabel>
+                  <Select
+                    value={formData.testId}
+                    onChange={(e) => setFormData({ ...formData, testId: e.target.value })}
+                    label="Test (Optional)"
+                    disabled={!selectedSeries}
+                  >
+                    <MenuItem value="">No Test</MenuItem>
+                    {tests?.map((test) => (
+                      <MenuItem key={test._id} value={test._id}>
+                        {test.title}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Explanation Image URL (Optional)"
+                  value={formData.imageUrl}
+                  onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                  disabled={!!image}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Question Image URL (Optional)"
+                  value={formData.questionImg}
+                  onChange={(e) => setFormData({ ...formData, questionImg: e.target.value })}
+                  disabled={!!questionImage}
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Info (Optional)"
+                  multiline
+                  rows={2}
+                  value={formData.info}
+                  onChange={(e) => setFormData({ ...formData, info: e.target.value })}
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Explanation (Optional)"
+                  multiline
+                  rows={3}
+                  value={formData.explain}
+                  onChange={(e) => setFormData({ ...formData, explain: e.target.value })}
+                />
+              </Grid>
             </Grid>
+          )}
 
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
-                <InputLabel>Subject</InputLabel>
-                <Select
-                  value={formData.subject}
-                  onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                  label="Subject"
-                >
-                  <MenuItem value="physics">Physics</MenuItem>
-                  <MenuItem value="chemistry">Chemistry</MenuItem>
-                  <MenuItem value="biology">Biology</MenuItem>
-                  <MenuItem value="english">English</MenuItem>
-                  <MenuItem value="mathematics">Mathematics</MenuItem>
-                  <MenuItem value="logic">Logic</MenuItem>
-                  <MenuItem value="others">Others</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Chapter"
-                value={formData.chapter}
-                onChange={(e) => setFormData({ ...formData, chapter: e.target.value })}
+          {tabValue === 1 && (
+            <Box>
+              <Typography variant="h6" gutterBottom>
+                Explanation Image
+              </Typography>
+              <input
+                accept="image/*"
+                style={{ display: 'none' }}
+                id="mcq-image-upload"
+                type="file"
+                onChange={handleImageChange}
               />
-            </Grid>
-
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Topic"
-                value={formData.topic}
-                onChange={(e) => setFormData({ ...formData, topic: e.target.value })}
-              />
-            </Grid>
-
-            <Grid item xs={12} md={4}>
-              <FormControl fullWidth>
-                <InputLabel>Difficulty</InputLabel>
-                <Select
-                  value={formData.difficulty}
-                  onChange={(e) => setFormData({ ...formData, difficulty: e.target.value })}
-                  label="Difficulty"
+              <label htmlFor="mcq-image-upload">
+                <Button
+                  variant="outlined"
+                  component="span"
+                  startIcon={<CloudUpload />}
+                  sx={{ mb: 2 }}
                 >
-                  <MenuItem value="easy">Easy</MenuItem>
-                  <MenuItem value="medium">Medium</MenuItem>
-                  <MenuItem value="hard">Hard</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
+                  Upload Explanation Image
+                </Button>
+              </label>
+              {imageUrl && (
+                <Box sx={{ mt: 2 }}>
+                  <img
+                    src={imageUrl}
+                    alt="MCQ"
+                    style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 8, cursor: 'pointer' }}
+                    onClick={() => openLightbox([{ src: imageUrl }], 0)}
+                  />
+                </Box>
+              )}
+            </Box>
+          )}
 
-            <Grid item xs={12} md={4}>
-              <FormControl fullWidth>
-                <InputLabel>Category</InputLabel>
-                <Select
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  label="Category"
-                >
-                  <MenuItem value="normal">Normal</MenuItem>
-                  <MenuItem value="critical">Critical</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-
-            <Grid item xs={12} md={4}>
-              <FormControl fullWidth>
-                <InputLabel>Course</InputLabel>
-                <Select
-                  value={formData.course}
-                  onChange={(e) => setFormData({ ...formData, course: e.target.value })}
-                  label="Course"
-                >
-                  <MenuItem value="mdcat">MDCAT</MenuItem>
-                  <MenuItem value="ecat">ECAT</MenuItem>
-                  <MenuItem value="nts">NTS</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
-                <InputLabel>Test (Optional)</InputLabel>
-                <Select
-                  value={formData.testId}
-                  onChange={(e) => setFormData({ ...formData, testId: e.target.value })}
-                  label="Test (Optional)"
-                  disabled={!selectedSeries}
-                >
-                  <MenuItem value="">No Test</MenuItem>
-                  {tests?.map((test) => (
-                    <MenuItem key={test._id} value={test._id}>
-                      {test.title}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Image URL (Optional)"
-                value={formData.imageUrl}
-                onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+          {tabValue === 2 && (
+            <Box>
+              <Typography variant="h6" gutterBottom>
+                Question Image
+              </Typography>
+              <input
+                accept="image/*"
+                style={{ display: 'none' }}
+                id="question-image-upload"
+                type="file"
+                onChange={handleQuestionImageChange}
               />
-            </Grid>
-
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Info (Optional)"
-                multiline
-                rows={2}
-                value={formData.info}
-                onChange={(e) => setFormData({ ...formData, info: e.target.value })}
-              />
-            </Grid>
-
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Explanation (Optional)"
-                multiline
-                rows={3}
-                value={formData.explain}
-                onChange={(e) => setFormData({ ...formData, explain: e.target.value })}
-              />
-            </Grid>
-          </Grid>
+              <label htmlFor="question-image-upload">
+                <Button
+                  variant="outlined"
+                  component="span"
+                  startIcon={<CloudUpload />}
+                  sx={{ mb: 2 }}
+                >
+                  Upload Question Image
+                </Button>
+              </label>
+              {questionImageUrl && (
+                <Box sx={{ mt: 2 }}>
+                  <img
+                    src={questionImageUrl}
+                    alt="Question"
+                    style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 8, cursor: 'pointer' }}
+                    onClick={() => openLightbox([{ src: questionImageUrl }], 0)}
+                  />
+                </Box>
+              )}
+            </Box>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button onClick={handleSubmit} variant="contained">
+          <Button onClick={handleSubmit} variant="contained" disabled={loading}>
             {editingMcq ? "Update" : "Create"}
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Lightbox for image viewing */}
+      <Lightbox
+        open={lightboxOpen}
+        close={() => setLightboxOpen(false)}
+        slides={lightboxImages}
+      />
     </Box>
   )
 }

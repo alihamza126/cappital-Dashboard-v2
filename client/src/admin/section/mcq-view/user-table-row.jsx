@@ -15,6 +15,8 @@ import { useEffect } from 'react';
 import { Col, Container, Form, Row } from 'react-bootstrap';
 import { bioTopicsNames, chemistryTopicsNames, physicsTopicsNames } from '../../../utils/topics';
 import { bioChapterNames, englishChapterNames, chemistryChapterNames, physicsChapterNames, logicChapterNames } from '../../../utils/chaptername';
+import Lightbox from 'yet-another-react-lightbox';
+import 'yet-another-react-lightbox/styles.css';
 
 const style = {
   position: 'absolute',
@@ -46,6 +48,7 @@ export default function UserTableRow({
   totalMcqs,
 
   isImage,
+  questionImg,
   selected,
   userId,
   handleClick,
@@ -98,6 +101,10 @@ export default function UserTableRow({
   const [selectChapter, setSelectChapter] = useState('');
   const [image, setImage] = useState(null);
   const [imageUrl, setImageUrl] = useState('');
+  const [questionImage, setQuestionImage] = useState(null);
+  const [questionImageUrl, setQuestionImageUrl] = useState('');
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxImages, setLightboxImages] = useState([]);
 
   const [formData, setFormData] = useState({
     question: '',
@@ -111,7 +118,8 @@ export default function UserTableRow({
     course: 'nums',
     info: '',
     explain: '',
-    imageUrl: ''
+    imageUrl: '',
+    questionImg: ''
   });
 
   const handleChange = (e) => {
@@ -147,9 +155,11 @@ export default function UserTableRow({
         errors.topic = 'Topic is required';
     }
     if (Object.keys(errors).length === 0) {
-      // Send data to API
-      if (image) {
-        try {
+      try {
+        let finalFormData = { ...formData };
+
+        // Upload MCQ image if selected
+        if (image) {
           const formImgData = new FormData();
           formImgData.append('image', image);
           const config = {
@@ -158,42 +168,45 @@ export default function UserTableRow({
             }
           };
           const imgResponse = await axiosInstance.post('/upload/img', formImgData, config);
-
           if (imgResponse.status === 200) {
-            try {
-              const formDataCopy = { ...formData, imageUrl: imgResponse.data.fileURL };
-              const mcqResponse = await axiosInstance.put('/mcq/update', { formData: formDataCopy, id: mcqId });
-              showCenteredSnackbar('MCQ Update successfully with Image', 'success');
-              // Clear form fields on successful submission
-              setImage(null);
-              setImageUrl('');
-              setErrors({});
-              setSelectChapter('');
-              setTopic([]);
-              // handleClose();
-              // handleReload();
-
-            } catch (error) {
-              showCenteredSnackbar(error.message, 'error');
-            }
+            finalFormData.imageUrl = imgResponse.data.fileURL;
           } else {
-            showCenteredSnackbar('Failed to upload image', 'error');
+            showCenteredSnackbar('Failed to upload MCQ image', 'error');
+            return;
           }
-        } catch (error) {
-          showCenteredSnackbar('Failed to upload image', 'error');
         }
-      } else {
-        try {
-          await axiosInstance.put('/mcq/update', { formData, id: mcqId });
-          showCenteredSnackbar('MCQ Update successfully without Image', 'success');
-          setImage(null);
-          setImageUrl('');
-          setErrors({});
-        } catch (error) {
-          showCenteredSnackbar('Failed to Update MCQ', 'error');
+
+        // Upload question image if selected
+        if (questionImage) {
+          const formImgData = new FormData();
+          formImgData.append('image', questionImage);
+          const config = {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            }
+          };
+          const imgResponse = await axiosInstance.post('/upload/img', formImgData, config);
+          if (imgResponse.status === 200) {
+            finalFormData.questionImg = imgResponse.data.fileURL;
+          } else {
+            showCenteredSnackbar('Failed to upload question image', 'error');
+            return;
+          }
         }
-        // handleClose();
-        // handleReload();
+
+        await axiosInstance.put('/mcq/update', { formData: finalFormData, id: mcqId });
+        showCenteredSnackbar('MCQ updated successfully', 'success');
+        
+        // Clear form fields on successful submission
+        setImage(null);
+        setImageUrl('');
+        setQuestionImage(null);
+        setQuestionImageUrl('');
+        setErrors({});
+        setSelectChapter('');
+        setTopic([]);
+      } catch (error) {
+        showCenteredSnackbar('Failed to update MCQ', 'error');
       }
     } else {
       setErrors(errors);
@@ -236,14 +249,24 @@ export default function UserTableRow({
     setFormData({ ...formData, topic: '' });
   }, [selectChapter]);
 
-  const handleFileChange = (event) => {
+  const handleFileChange = (event, type) => {
     const file = event.target.files[0];
     const reader = new FileReader();
     reader.onload = () => {
-      setImageUrl(reader.result);
+      if (type === 'mcq') {
+        setImageUrl(reader.result);
+        setImage(file);
+      } else if (type === 'question') {
+        setQuestionImageUrl(reader.result);
+        setQuestionImage(file);
+      }
     };
     reader.readAsDataURL(file);
-    setImage(file);
+  };
+
+  const openLightbox = (images, startIndex = 0) => {
+    setLightboxImages(images);
+    setLightboxOpen(true);
   };
 
   const handleSubjectChange = (e) => {
@@ -275,6 +298,8 @@ export default function UserTableRow({
     setSubj(subject)
     setImage(null);
     setImageUrl(isImage);
+    setQuestionImage(null);
+    setQuestionImageUrl(questionImg || '');
     setFormData({
       question,
       options: [option1, option2, option3, option4],
@@ -287,7 +312,8 @@ export default function UserTableRow({
       course: course,
       info: mcqInfo,
       explain: mcqExplain,
-      imageUrl: isImage
+      imageUrl: isImage,
+      questionImg: questionImg || ''
     })
   }
 
@@ -367,7 +393,30 @@ export default function UserTableRow({
         <TableCell align="center">{chapter}</TableCell>
         <TableCell align="center">{chapTopic}</TableCell>
         <TableCell align="center">{mcqInfo}</TableCell>
-        <TableCell align="center">{isImage === "" ? 'No' : <a target='_blank' href={isImage}>view</a>}</TableCell>
+        <TableCell align="center">
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {isImage ? (
+              <img 
+                src={isImage} 
+                alt="MCQ" 
+                style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 4, cursor: 'pointer' }}
+                onClick={() => openLightbox([{ src: isImage }], 0)}
+              />
+            ) : (
+              <span style={{ fontSize: '12px', color: '#999' }}>No MCQ img</span>
+            )}
+            {questionImg ? (
+              <img 
+                src={questionImg} 
+                alt="Question" 
+                style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 4, cursor: 'pointer' }}
+                onClick={() => openLightbox([{ src: questionImg }], 0)}
+              />
+            ) : (
+              <span style={{ fontSize: '12px', color: '#999' }}>No Q img</span>
+            )}
+          </div>
+        </TableCell>
 
         <TableCell align="right">
           <button className='btn btn-sm btn-warning' onClick={() => handleEdit(mcqId)}>Edit</button>
@@ -500,17 +549,50 @@ export default function UserTableRow({
                 <Form.Control as="textarea" rows={20} name="explain" value={formData.explain} onChange={handleChange} />
               </Form.Group>
 
-              {/* Image URL */}
+              {/* MCQ Image Upload */}
               <div className="row py-1 my-3">
-                <div className="col-md-12 col-12 mb-4">
+                <div className="col-md-6 col-12 mb-4">
+                  <h6 className="fw-bold text-primary">Explanation Image</h6>
                   <div className="p-1 d-flex gap-2">
                     <div className="row justify-content-center">
-                      <input id='file' type="file" hidden accept="image/*" onChange={handleFileChange} />
-                      <label htmlFor="file" name="file" className='d-flex justify-content-center'>
-                        <span className='btn btn-secondary btn-sm w-100 px-5 mt- h-25'>Select Image</span>
+                      <input id='mcq-file' type="file" hidden accept="image/*" onChange={(e) => handleFileChange(e, 'mcq')} />
+                      <label htmlFor="mcq-file" name="file" className='d-flex justify-content-center'>
+                        <span className='btn btn-secondary btn-sm w-100 px-3'>Upload Explanation Image</span>
                       </label>
                     </div>
-                    <img height={150} src={imageUrl} alt="Image not selected" className='border border-primary rounded-2 overflow-hidden' />
+                    {imageUrl && (
+                      <img 
+                        height={150} 
+                        src={imageUrl} 
+                        alt="MCQ Image" 
+                        className='border border-primary rounded-2 overflow-hidden cursor-pointer'
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => openLightbox([{ src: imageUrl }], 0)}
+                      />
+                    )}
+                  </div>
+                </div>
+
+                {/* Question Image Upload */}
+                <div className="col-md-6 col-12 mb-4">
+                  <h6 className="fw-bold text-primary">Question Image</h6>
+                  <div className="p-1 d-flex gap-2">
+                    <div className="row justify-content-center">
+                      <input id='question-file' type="file" hidden accept="image/*" onChange={(e) => handleFileChange(e, 'question')} />
+                      <label htmlFor="question-file" name="file" className='d-flex justify-content-center'>
+                        <span className='btn btn-secondary btn-sm w-100 px-3'>Upload Question Image</span>
+                      </label>
+                    </div>
+                    {questionImageUrl && (
+                      <img 
+                        height={150} 
+                        src={questionImageUrl} 
+                        alt="Question Image" 
+                        className='border border-primary rounded-2 overflow-hidden cursor-pointer'
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => openLightbox([{ src: questionImageUrl }], 0)}
+                      />
+                    )}
                   </div>
                 </div>
               </div>
@@ -523,6 +605,13 @@ export default function UserTableRow({
           </Container>
         </Box>
       </Modal>
+
+      {/* Lightbox for image viewing */}
+      <Lightbox
+        open={lightboxOpen}
+        close={() => setLightboxOpen(false)}
+        slides={lightboxImages}
+      />
     </>
   );
 }

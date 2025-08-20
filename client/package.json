@@ -43,7 +43,8 @@
     "sass": "^1.72.0",
     "simplebar-react": "^3.2.4",
     "styled-components": "^6.1.8",
-    "swiper": "^11.1.0"
+    "swiper": "^11.1.0",
+    "yet-another-react-lightbox": "^3.25.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.66",

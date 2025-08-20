@@ -20,7 +20,7 @@ const mcqSchema = new mongoose.Schema({
   },
   subject: {
     type: String,
-    enum: ['english', 'chemistry', 'physics', 'logic', 'biology','others'],
+    enum: ['english', 'chemistry', 'physics', 'logic', 'biology', 'others'],
     required: true
   },
   chapter: {
@@ -51,7 +51,8 @@ const mcqSchema = new mongoose.Schema({
     type: String,
     default: "Explanation Not provided"
   },
-  imageUrl: String,
+  imageUrl: { type: String, default: '' },
+  questionImg: { type: String, default: '' },
   isSeries: {
     type: Boolean,
     default: false
@@ -59,7 +60,7 @@ const mcqSchema = new mongoose.Schema({
   seriesId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Series',
-    required: function() {
+    required: function () {
       return this.isSeries === true;
     }
   }

@@ -7,6 +7,8 @@ import { closeSnackbar, useSnackbar } from 'notistack';
 import { Close } from '@mui/icons-material';
 import { bioTopicsNames, chemistryTopicsNames, physicsTopicsNames } from '../../../utils/topics';
 import axiosInstance from '../../../baseUrl';
+import Lightbox from 'yet-another-react-lightbox';
+import 'yet-another-react-lightbox/styles.css';
 
 const MCQForm = () => {
     const [errors, setErrors] = useState({});
@@ -16,7 +18,11 @@ const MCQForm = () => {
     const [selectChapter, setSelectChapter] = useState('');
     const [image, setImage] = useState(null);
     const [imageUrl, setImageUrl] = useState('');
-    const [isLoading,setIsLoading]=useState(false);
+    const [questionImage, setQuestionImage] = useState(null);
+    const [questionImageUrl, setQuestionImageUrl] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [lightboxOpen, setLightboxOpen] = useState(false);
+    const [lightboxImages, setLightboxImages] = useState([]);
 
     const { enqueueSnackbar } = useSnackbar();
 
@@ -49,11 +55,11 @@ const MCQForm = () => {
         course: 'nums',
         info: '',
         explain: '',
-        imageUrl: ''
+        imageUrl: '',
+        questionImg: ''
     });
 
     const handleChange = (e) => {
-        
         const { name, value } = e.target;
         if (name.startsWith('option')) {
             const index = parseInt(name.slice(-1)) - 1; // Extract index from option name (e.g., option1 -> 0)
@@ -86,14 +92,13 @@ const MCQForm = () => {
             if (!formData.topic.trim())
                 errors.topic = 'Topic is required';
         }
-        // if (formData.info.length < 9) {
-        //     errors.info = 'Info should be atleast 9 characters long';
-        // }
+
         if (Object.keys(errors).length === 0) {
-            // Submit form if no errors
-            // Send data to API
-            if (image) {
-                try {
+            try {
+                let finalFormData = { ...formData };
+
+                // Upload MCQ image if selected
+                if (image) {
                     const formImgData = new FormData();
                     formImgData.append('image', image);
                     const config = {
@@ -103,64 +108,60 @@ const MCQForm = () => {
                     };
                     const imgResponse = await axiosInstance.post('/upload/img', formImgData, config);
                     if (imgResponse.status === 200) {
-                        try {
-                            const formDataCopy = { ...formData, imageUrl: imgResponse.data.fileURL };
-                            const mcqResponse = await axiosInstance.post('/mcq/add', formDataCopy);
-                            showCenteredSnackbar('MCQ added successfully with Image', 'success');
-                            setIsLoading(false)
-                            // Clear form fields on successful submission
-                            setImage(null);
-                            setImageUrl('');
-                            setErrors({});
-                            setSelectChapter('');
-                            setTopic([]);
-                            
-                            setFormData({
-                                ...formData,
-                                question: '',
-                                options: ['', '', '', ''],
-                                correctOption: '',
-                                difficulty: 'easy',
-                                category: 'normal',
-                                topic: '',
-                                chapter: "",  // You might not want to reset the chapter after submission
-                                explain: '',
-                                imageUrl: '',
-                                info: '',
-                            });
-                        } catch (error) {
-                            showCenteredSnackbar(error.message, 'error');
-                        }
+                        finalFormData.imageUrl = imgResponse.data.fileURL;
                     } else {
-                        showCenteredSnackbar('Failed to upload image', 'error');
+                        showCenteredSnackbar('Failed to upload Explanation Image', 'error');
+                        setIsLoading(false);
+                        return;
                     }
-                } catch (error) {
-                    showCenteredSnackbar('Failed to upload image', 'error');
-                    setIsLoading(false)
                 }
-            } else {
-                try {
-                    await axiosInstance.post('/mcq/add', formData);
-                    showCenteredSnackbar('MCQ added successfully without Image', 'success');
-                    setImage(null);
-                    setImageUrl('');
-                    setErrors({});
-                    setFormData({
-                        ...formData,
-                        question: '',
-                        options: ['', '', '', ''],
-                        correctOption: '',
-                        difficulty: 'easy',
-                        category: 'normal',
-                        topic: '',
-                        chapter: "",  // You might not want to reset the chapter after submission
-                        explain: '',
-                        imageUrl: '',
-                        info: '',
-                    });
-                } catch (error) {
-                    showCenteredSnackbar('Failed to add MCQ', 'error');
+
+                // Upload question image if selected
+                if (questionImage) {
+                    const formImgData = new FormData();
+                    formImgData.append('image', questionImage);
+                    const config = {
+                        headers: {
+                            'Content-Type': 'multipart/form-data',
+                        }
+                    };
+                    const imgResponse = await axiosInstance.post('/upload/img', formImgData, config);
+                    if (imgResponse.status === 200) {
+                        finalFormData.questionImg = imgResponse.data.fileURL;
+                    } else {
+                        showCenteredSnackbar('Failed to upload question image', 'error');
+                        setIsLoading(false);
+                        return;
+                    }
                 }
+
+                const mcqResponse = await axiosInstance.post('/mcq/add', finalFormData);
+                showCenteredSnackbar('MCQ added successfully', 'success');
+                
+                // Clear form fields on successful submission
+                setImage(null);
+                setImageUrl('');
+                setQuestionImage(null);
+                setQuestionImageUrl('');
+                setErrors({});
+                setSelectChapter('');
+                setTopic([]);
+                
+                setFormData({
+                    question: '',
+                    options: ['', '', '', ''],
+                    correctOption: '',
+                    difficulty: 'easy',
+                    category: 'normal',
+                    topic: '',
+                    chapter: "",
+                    explain: '',
+                    imageUrl: '',
+                    questionImg: '',
+                    info: '',
+                });
+            } catch (error) {
+                showCenteredSnackbar(error.response?.data?.error || 'Failed to add MCQ', 'error');
             }
         } else {
             setErrors(errors);
@@ -202,23 +203,32 @@ const MCQForm = () => {
         }
     }, [selectChapter]);
 
-    const handleFileChange = (event) => {
+    const handleFileChange = (event, type) => {
         const file = event.target.files[0];
         const reader = new FileReader();
         reader.onload = () => {
-            setImageUrl(reader.result);
+            if (type === 'mcq') {
+                setImageUrl(reader.result);
+                setImage(file);
+            } else if (type === 'question') {
+                setQuestionImageUrl(reader.result);
+                setQuestionImage(file);
+            }
         };
         reader.readAsDataURL(file);
-        setImage(file);
     };
 
     const handleSubjectChange = (e) => {
         const { name, value } = e.target;
         setTopic([]);
-        setFormData({ ...formData,[name]: value ,topic:'',chapter:''});
+        setFormData({ ...formData, [name]: value, topic: '', chapter: '' });
         setSubject(e.target.value);
     }
 
+    const openLightbox = (images, startIndex = 0) => {
+        setLightboxImages(images);
+        setLightboxOpen(true);
+    };
 
     return (
         <Container>
@@ -309,7 +319,7 @@ const MCQForm = () => {
                         <Form.Group controlId="chapter">
                             <Form.Label>Chapter</Form.Label>
                             <Form.Control as="select" placeholder='Select Chapter' name="chapter" value={formData.chapter} onChange={(e) => setSelectChapter(e.target.value)} onChangeCapture={handleChange} isInvalid={!!errors.chapter}>
-                            <option value={''}>Select Chapter</option>
+                                <option value={''}>Select Chapter</option>
                                 {chapter?.map((e, index) => (
                                     <option key={index} value={e}>{e}</option>
                                 ))}
@@ -321,7 +331,7 @@ const MCQForm = () => {
                         <Form.Group controlId="topic">
                             <Form.Label>Topic</Form.Label>
                             <Form.Control as="select" name="topic" value={formData.topic} onChange={handleChange} isInvalid={!!errors.topic}>
-                            <option value={''}>Select Topic</option>
+                                <option value={''}>Select Topic</option>
                                 {topic?.map((e, index) => (
                                     <option key={index} value={e}>{e}</option>
                                 ))}
@@ -337,23 +347,63 @@ const MCQForm = () => {
                     <Form.Control as="textarea" name="explain" value={formData.explain} onChange={handleChange} />
                 </Form.Group>
 
-                {/* Image URL */}
+                {/* MCQ Image Upload */}
                 <div className="row py-1 my-3">
-                    <div className="col-md-12 col-12 mb-4">
+                    <div className="col-md-6 col-12 mb-4">
+                        <h6 className="fw-bold text-primary">Explanation Image</h6>
                         <div className="p-1 d-flex gap-2">
                             <div className="row justify-content-center">
-                                <input id='file' type="file" hidden accept="image/*" onChange={handleFileChange} />
-                                <label htmlFor="file" name="file" className='d-flex justify-content-center'>
-                                    <span className='btn btn-secondary btn-sm w-100 px-5 mt- h-25'>Select Image</span>
+                                <input id='mcq-file' type="file" hidden accept="image/*" onChange={(e) => handleFileChange(e, 'mcq')} />
+                                <label htmlFor="mcq-file" name="file" className='d-flex justify-content-center'>
+                                    <span className='btn btn-secondary btn-sm w-100 px-3'>Upload Explanation Image</span>
                                 </label>
                             </div>
-                            <img height={150} src={imageUrl} alt="Image not selected" className='border border-primary rounded-2 overflow-hidden' />
+                            {imageUrl && (
+                                <img 
+                                    height={150} 
+                                    src={imageUrl} 
+                                    alt="MCQ Image" 
+                                    className='border border-primary rounded-2 overflow-hidden cursor-pointer'
+                                    style={{ cursor: 'pointer' }}
+                                    onClick={() => openLightbox([{ src: imageUrl }], 0)}
+                                />
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Question Image Upload */}
+                    <div className="col-md-6 col-12 mb-4">
+                        <h6 className="fw-bold text-primary">Question Image</h6>
+                        <div className="p-1 d-flex gap-2">
+                            <div className="row justify-content-center">
+                                <input id='question-file' type="file" hidden accept="image/*" onChange={(e) => handleFileChange(e, 'question')} />
+                                <label htmlFor="question-file" name="file" className='d-flex justify-content-center'>
+                                    <span className='btn btn-secondary btn-sm w-100 px-3'>Upload Question Image</span>
+                                </label>
+                            </div>
+                            {questionImageUrl && (
+                                <img 
+                                    height={150} 
+                                    src={questionImageUrl} 
+                                    alt="Question Image" 
+                                    className='border border-primary rounded-2 overflow-hidden cursor-pointer'
+                                    style={{ cursor: 'pointer' }}
+                                    onClick={() => openLightbox([{ src: questionImageUrl }], 0)}
+                                />
+                            )}
                         </div>
                     </div>
                 </div>
 
-                <Button variant="primary" className='px-5 fw-bold' type="submit" onClick={handleSubmit}>Submit {isLoading&&<Spinner className='ms-1' size='sm'/>}</Button>
+                <Button variant="primary" className='px-5 fw-bold' type="submit" onClick={handleSubmit}>Submit {isLoading && <Spinner className='ms-1' size='sm' />}</Button>
             </Form>
+
+            {/* Lightbox for image viewing */}
+            <Lightbox
+                open={lightboxOpen}
+                close={() => setLightboxOpen(false)}
+                slides={lightboxImages}
+            />
         </Container>
     );
 };

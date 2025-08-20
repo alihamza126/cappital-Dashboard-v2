@@ -13,7 +13,14 @@ router.get('/series/:seriesId', wrapAsync(async (req, res) => {
         let query = { seriesId: req.params.seriesId };
         
         // Apply filters
-        if (subject) query.subject = subject;
+        if (subject) {
+            // Handle subject filtering for arrays
+            if (Array.isArray(subject)) {
+                query.subject = { $in: subject };
+            } else {
+                query.subject = subject;
+            }
+        }
         if (chapter) query.chapter = { $regex: chapter, $options: 'i' };
         if (topic) query.topic = { $regex: topic, $options: 'i' };
         if (difficulty) query.difficulty = difficulty;
@@ -44,11 +51,40 @@ router.get('/series/:seriesId', wrapAsync(async (req, res) => {
 // Get all MCQs for a specific test
 router.get('/test/:testId', wrapAsync(async (req, res) => {
     try {
-        const mcqs = await SeriesMCQ.find({ testId: req.params.testId })
+        const { page = 1, limit = 10, subject, chapter, topic, difficulty } = req.query;
+        
+        let query = { testId: req.params.testId };
+        
+        // Apply filters
+        if (subject) {
+            // Handle subject filtering for arrays
+            if (Array.isArray(subject)) {
+                query.subject = { $in: subject };
+            } else {
+                query.subject = subject;
+            }
+        }
+        if (chapter) query.chapter = { $regex: chapter, $options: 'i' };
+        if (topic) query.topic = { $regex: topic, $options: 'i' };
+        if (difficulty) query.difficulty = difficulty;
+        
+        const skip = (page - 1) * limit;
+        
+        const mcqs = await SeriesMCQ.find(query)
+            .populate('testId', 'title')
             .populate('createdBy', 'username')
-            .sort({ createdAt: -1 });
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(parseInt(limit));
             
-        res.status(200).json(mcqs);
+        const total = await SeriesMCQ.countDocuments(query);
+        
+        res.status(200).json({
+            mcqs,
+            totalPages: Math.ceil(total / limit),
+            currentPage: parseInt(page),
+            total
+        });
     } catch (error) {
         console.log('Error fetching test MCQs:', error);
         res.status(500).json({ error: "Failed to fetch MCQs" });
@@ -89,6 +125,7 @@ router.post('/', wrapAsync(async (req, res) => {
             info,
             explain,
             imageUrl,
+            questionImg,
             seriesId,
             testId
         } = req.body;
@@ -107,18 +144,32 @@ router.post('/', wrapAsync(async (req, res) => {
             }
         }
 
-        // Normalize subject to lowercase
-        const normalizedSubject = subject.toLowerCase();
+        // Normalize subjects to lowercase and validate
         const validSubjects = ['physics', 'chemistry', 'biology', 'english', 'mathematics', 'logic', 'others'];
-        if (!validSubjects.includes(normalizedSubject)) {
-            return res.status(400).json({ error: `Invalid subject: ${subject}. Valid subjects are: ${validSubjects.join(', ')}` });
+        
+        // Ensure subject is always an array
+        let subjectArray = subject;
+        if (!Array.isArray(subject)) {
+            subjectArray = [subject];
         }
+        
+        // Validate and normalize each subject
+        const normalizedSubjects = subjectArray.map(s => {
+            if (typeof s !== 'string') {
+                throw new Error(`Invalid subject type: ${typeof s}. Subject must be a string.`);
+            }
+            const normalized = s.toLowerCase();
+            if (!validSubjects.includes(normalized)) {
+                throw new Error(`Invalid subject: ${s}. Valid subjects are: ${validSubjects.join(', ')}`);
+            }
+            return normalized;
+        });
 
         const mcq = new SeriesMCQ({
             question,
             options,
             correctOption,
-            subject: normalizedSubject,
+            subject: normalizedSubjects,
             chapter,
             topic,
             difficulty: difficulty || 'easy',
@@ -127,6 +178,7 @@ router.post('/', wrapAsync(async (req, res) => {
             info: info || '',
             explain: explain || '',
             imageUrl: imageUrl || '',
+            questionImg: questionImg || '',
             seriesId,
             testId,
             createdBy: req.user?._id
@@ -161,6 +213,7 @@ router.put('/:id', wrapAsync(async (req, res) => {
             info,
             explain,
             imageUrl,
+            questionImg,
             testId
         } = req.body;
 
@@ -172,12 +225,26 @@ router.put('/:id', wrapAsync(async (req, res) => {
             }
         }
 
-        // Normalize subject to lowercase
-        const normalizedSubject = subject.toLowerCase();
+        // Normalize subjects to lowercase and validate
         const validSubjects = ['physics', 'chemistry', 'biology', 'english', 'mathematics', 'logic', 'others'];
-        if (!validSubjects.includes(normalizedSubject)) {
-            return res.status(400).json({ error: `Invalid subject: ${subject}. Valid subjects are: ${validSubjects.join(', ')}` });
+        
+        // Ensure subject is always an array
+        let subjectArray = subject;
+        if (!Array.isArray(subject)) {
+            subjectArray = [subject];
         }
+        
+        // Validate and normalize each subject
+        const normalizedSubjects = subjectArray.map(s => {
+            if (typeof s !== 'string') {
+                throw new Error(`Invalid subject type: ${typeof s}. Subject must be a string.`);
+            }
+            const normalized = s.toLowerCase();
+            if (!validSubjects.includes(normalized)) {
+                throw new Error(`Invalid subject: ${s}. Valid subjects are: ${validSubjects.join(', ')}`);
+            }
+            return normalized;
+        });
 
         const mcq = await SeriesMCQ.findByIdAndUpdate(
             req.params.id,
@@ -185,7 +252,7 @@ router.put('/:id', wrapAsync(async (req, res) => {
                 question,
                 options,
                 correctOption,
-                subject: normalizedSubject,
+                subject: normalizedSubjects,
                 chapter,
                 topic,
                 difficulty,
@@ -194,6 +261,7 @@ router.put('/:id', wrapAsync(async (req, res) => {
                 info,
                 explain,
                 imageUrl,
+                questionImg,
                 testId
             },
             { new: true }

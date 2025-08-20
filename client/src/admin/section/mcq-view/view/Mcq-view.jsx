@@ -58,7 +58,7 @@ export default function UserPage() {
 
   const HandleSearch = async (e) => {
     e.preventDefault();
-    const searchQuestion=e.target.form[0].value;  
+    const searchQuestion = e.target.form[0].value;
     try {
       setLoading(true)
       const response = await axiosInstance.get(`/mcq/search?question=${searchQuestion}`);
@@ -135,7 +135,7 @@ export default function UserPage() {
 
 
   return (
-    <Container>
+    <Container style={{ padding: 0 }}>
       <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>
         <Typography variant="h4" className='fw-bold text-primary'>MCQ'S <QuestionAnswer fontSize='44' /></Typography>
       </Stack>
@@ -145,8 +145,8 @@ export default function UserPage() {
       <p>3: You can Search McQ's By Question from Database</p>
 
       <form>
-      <hr />
-        <input type="text" className='form-control' placeholder="Search By Question from Database"/>
+        <hr />
+        <input type="text" className='form-control' placeholder="Search By Question from Database" />
         <button onClick={HandleSearch} type='submit' className='btn btn-info mt-2 ms-auto'>Search</button>
       </form>
       <br />
@@ -186,7 +186,7 @@ export default function UserPage() {
                 { id: 'chapter', label: 'Chapter' },
                 { id: 'topic', label: 'Topic' },
                 { id: 'mcqInfo', label: 'mcqInfo' },
-                { id: 'isImage', label: 'Image' },
+                { id: 'isImage', label: 'Images' },
                 { id: '' },
               ]}
             />
@@ -209,6 +209,7 @@ export default function UserPage() {
                         chapter={row.chapter}
                         chapTopic={row.topic}
                         isImage={row.imageUrl}
+                        questionImg={row.questionImg}
                         mcqInfo={row.info}
                         mcqExplain={row.explain}
                         totalMcqs={dataFiltered}

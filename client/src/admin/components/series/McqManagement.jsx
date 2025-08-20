@@ -797,7 +797,7 @@ const McqManagement = () => {
                     {tabValue === 1 && (
                         <Box>
                             <Typography variant="h6" gutterBottom>
-                                MCQ Image
+                                MCQ Explanation Image
                             </Typography>
                             <input
                                 accept="image/*"
