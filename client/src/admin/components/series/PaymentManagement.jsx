@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { 
-    Button, 
-    Card, 
-    CardContent, 
-    Typography, 
-    Grid, 
-    Dialog, 
-    DialogTitle, 
-    DialogContent, 
+import {
+    Button,
+    Card,
+    CardContent,
+    Typography,
+    Grid,
+    Dialog,
+    DialogTitle,
+    DialogContent,
     DialogActions,
     TextField,
     FormControl,
@@ -27,11 +27,11 @@ import {
     Alert,
     Avatar
 } from '@mui/material';
-import { 
-    Add, 
-    Edit, 
-    Delete, 
-    Visibility, 
+import {
+    Add,
+    Edit,
+    Delete,
+    Visibility,
     Payment,
     TrendingUp,
     Schedule,
@@ -40,6 +40,7 @@ import {
 } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
 import axiosInstance from '../../../baseUrl';
+import FsLightbox from 'fslightbox-react';
 
 const PaymentManagement = () => {
     const [payments, setPayments] = useState([]);
@@ -52,6 +53,7 @@ const PaymentManagement = () => {
     const [selectedSeriesId, setSelectedSeriesId] = useState('');
     const [stats, setStats] = useState({});
     const { enqueueSnackbar } = useSnackbar();
+    const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
     const [formData, setFormData] = useState({
         userId: '',
@@ -96,7 +98,7 @@ const PaymentManagement = () => {
     const fetchUsers = async () => {
         try {
             const response = await axiosInstance.get('/user');
-            setUsers(response.data||[]);
+            setUsers(response.data || []);
         } catch (error) {
             enqueueSnackbar('Failed to fetch users', { variant: 'error' });
         }
@@ -178,13 +180,14 @@ const PaymentManagement = () => {
         if (!formData.userId) newErrors.userId = 'User is required';
         if (!formData.seriesId) newErrors.seriesId = 'Series is required';
         if (!formData.amount) newErrors.amount = 'Amount is required';
-        
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
 
     const handleSubmit = async () => {
         if (!validateForm()) return;
+
 
         try {
             setLoading(true);
@@ -193,6 +196,7 @@ const PaymentManagement = () => {
                 amount: Number(formData.amount),
                 discountApplied: formData.discountApplied ? Number(formData.discountApplied) : 0
             };
+            console.log("payment is", payments)
 
             if (editingPayment) {
                 await axiosInstance.put(`/payments/${editingPayment._id}`, submitData);
@@ -406,15 +410,15 @@ const PaymentManagement = () => {
                                             )}
                                         </TableCell>
                                         <TableCell>
-                                            <Chip 
-                                                label={item.status} 
+                                            <Chip
+                                                label={item.status}
                                                 color={getStatusColor(item.status)}
                                                 size="small"
                                             />
                                         </TableCell>
                                         <TableCell>
-                                            <Chip 
-                                                label={item.provider} 
+                                            <Chip
+                                                label={item.provider}
                                                 size="small"
                                                 variant="outlined"
                                             />
@@ -423,22 +427,22 @@ const PaymentManagement = () => {
                                             {new Date(item.createdAt).toLocaleDateString()}
                                         </TableCell>
                                         <TableCell>
-                                            <IconButton 
-                                                size="small" 
+                                            <IconButton
+                                                size="small"
                                                 onClick={() => setSelectedPayment(item)}
                                                 color="primary"
                                             >
                                                 <Visibility />
                                             </IconButton>
-                                            <IconButton 
-                                                size="small" 
+                                            <IconButton
+                                                size="small"
                                                 onClick={() => handleOpenDialog(item)}
                                                 color="primary"
                                             >
                                                 <Edit />
                                             </IconButton>
-                                            <IconButton 
-                                                size="small" 
+                                            <IconButton
+                                                size="small"
                                                 onClick={() => handleDelete(item._id)}
                                                 color="error"
                                             >
@@ -566,13 +570,29 @@ const PaymentManagement = () => {
                                 onChange={(e) => setFormData({ ...formData, providerRef: e.target.value })}
                             />
                         </Grid>
+                        <Grid item xs={12}>
+                            <img
+                                src={formData.providerRef}
+                                height={90}
+                                className='rounded-3'
+                                alt="Payment icon"
+                                style={{ cursor: 'pointer' }}
+                                onClick={() => setIsLightboxOpen(true)}
+                            />
+                            <FsLightbox
+                                toggler={isLightboxOpen}
+                                sources={[formData.providerRef]}
+                                onClose={() => setIsLightboxOpen(false)}
+                                sourcesAction="zoom"
+                            />
+                        </Grid>
                     </Grid>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleCloseDialog}>Cancel</Button>
-                    <Button 
-                        onClick={handleSubmit} 
-                        variant="contained" 
+                    <Button
+                        onClick={handleSubmit}
+                        variant="contained"
                         disabled={loading}
                         sx={{ bgcolor: '#4e73df' }}
                     >
@@ -598,7 +618,24 @@ const PaymentManagement = () => {
                                     </Typography>
                                 </Grid>
                                 <Grid item xs={12}>
-                                    <Typography variant="h6">Series Information</Typography>
+                                    <img
+                                        src={selectedPayment.providerRef}
+                                        height={90}
+                                        className='rounded-3'
+                                        alt="Payment icon"
+                                        style={{ cursor: 'pointer' }}
+                                        onClick={() => setIsLightboxOpen(true)}
+                                    />
+                                    <FsLightbox
+                                        toggler={isLightboxOpen}
+                                        sources={[selectedPayment.providerRef]}
+                                        onClose={() => setIsLightboxOpen(false)}
+                                        sourcesAction="zoom"
+                                    />
+                                    {console.log("selectedPayment.providerRef is", selectedPayment.providerRef)}
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <Typography variant="h6">Series Informations</Typography>
                                     <Typography variant="body2">
                                         Series: {getSeriesTitle(selectedPayment.seriesId._id || selectedPayment.seriesId)}
                                     </Typography>
@@ -641,7 +678,7 @@ const PaymentManagement = () => {
                         </DialogContent>
                         <DialogActions>
                             <Button onClick={() => setSelectedPayment(null)}>Close</Button>
-                            <Button 
+                            <Button
                                 onClick={() => {
                                     setSelectedPayment(null);
                                     handleOpenDialog(selectedPayment);

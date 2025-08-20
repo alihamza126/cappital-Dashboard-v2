@@ -3,6 +3,7 @@ const router = express.Router();
 const wrapAsync = require('../../utils/wrapAsync');
 const Payment = require('../../models/series/orders');
 const Series = require('../../models/series/series');
+const Enrollment = require('../../models/series/enrollments');
 
 // Get all payments
 router.get('/all', wrapAsync(async (req, res) => {
@@ -79,7 +80,8 @@ router.post('/', wrapAsync(async (req, res) => {
 // Update payment status
 router.patch('/:id/status', wrapAsync(async (req, res) => {
     try {
-        const { status } = req.body;
+        console.log("req.body is", req.body)    
+        const { status, userId, seriesId } = req.body;
         const payment = await Payment.findByIdAndUpdate(
             req.params.id,
             { status },
@@ -90,9 +92,28 @@ router.patch('/:id/status', wrapAsync(async (req, res) => {
             return res.status(404).json({ error: "Payment not found" });
         }
 
-        res.status(200).json({ 
-            message: `Payment status updated to ${status}`, 
-            payment 
+        if (status == "paid") {
+            // check if enrollment already exists to avoid duplicates
+            console.log("enrollment is checking", userId, seriesId)
+            let enrollment = await Enrollment.findOne({ userId, seriesId });
+            console.log("enrollment is", enrollment)
+            if (!enrollment) {
+                enrollment = new Enrollment({
+                    userId,
+                    seriesId,
+                    activatedAt: new Date(),
+                });
+
+                await enrollment.save();
+                console.log("enrollment is created", enrollment)
+            }
+        } else if (status === "failed" || status === "canceled" || status === "refunded" || status === "processing") {
+            await Enrollment.deleteOne({ userId, seriesId });
+        }
+
+        res.status(200).json({
+            message: `Payment status updated to ${status}`,
+            payment
         });
     } catch (error) {
         res.status(500).json({ error: "Failed to update payment status" });
@@ -109,9 +130,14 @@ router.put('/:id', wrapAsync(async (req, res) => {
             discountApplied,
             status,
             provider,
-            providerRef
+            providerRef,
+            userId,
+            seriesId,
         } = req.body;
 
+        console.log(req.body);
+
+        // Update payment
         const payment = await Payment.findByIdAndUpdate(
             req.params.id,
             {
@@ -130,8 +156,29 @@ router.put('/:id', wrapAsync(async (req, res) => {
             return res.status(404).json({ error: "Payment not found" });
         }
 
+        // If payment is successful → create enrollment
+        if (status == "paid") {
+            // check if enrollment already exists to avoid duplicates
+            console.log("enrollment is checking", userId, seriesId)
+            let enrollment = await Enrollment.findOne({ userId, seriesId });
+            console.log("enrollment is", enrollment)
+            if (!enrollment) {
+                enrollment = new Enrollment({
+                    userId,
+                    seriesId,
+                    activatedAt: new Date(),
+                });
+
+                await enrollment.save();
+                console.log("enrollment is created", enrollment)
+            }
+        } else if (status === "failed" || status === "canceled" || status === "refunded" || status === "processing") {
+            await Enrollment.deleteOne({ userId, seriesId });
+        }
+
         res.status(200).json({ message: "Payment updated successfully", payment });
     } catch (error) {
+        console.error(error);
         res.status(500).json({ error: "Failed to update payment" });
     }
 }));
