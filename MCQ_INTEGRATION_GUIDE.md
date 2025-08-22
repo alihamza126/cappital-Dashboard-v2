@@ -71,7 +71,7 @@ The MCQ model includes:
 {
   question: String,           // Question text
   options: [String],         // Array of answer choices
-  correctOption: Number,     // Index of correct answer (0-3)
+  correctOption: Number,     // Index of correct answer (1-4)
   difficulty: String,        // 'easy', 'medium', 'hard'
   subject: String,          // 'biology', 'chemistry', 'physics', 'english', 'logic'
   chapter: String,          // Chapter name

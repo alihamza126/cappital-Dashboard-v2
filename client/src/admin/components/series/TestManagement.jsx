@@ -194,8 +194,8 @@ const TestManagement = () => {
             if (!mcq.options || mcq.options.length !== 4 || mcq.options.some(opt => !opt)) {
                 newErrors[`mcq_${index}_options`] = 'All 4 options are required';
             }
-            if (mcq.correctOption < 0 || mcq.correctOption > 3) {
-                newErrors[`mcq_${index}_correctOption`] = 'Correct option must be A, B, C, or D';
+            if (mcq.correctOption < 1 || mcq.correctOption > 4) {
+                newErrors[`mcq_${index}_correctOption`] = 'Correct option must be 1, 2, 3, or 4';
             }
             if (!mcq.subject || (Array.isArray(mcq.subject) && mcq.subject.length === 0) || (!Array.isArray(mcq.subject) && !mcq.subject)) {
                 newErrors[`mcq_${index}_subject`] = 'Subject is required';
@@ -295,30 +295,85 @@ const TestManagement = () => {
     };
 
     // MCQ Management Functions
-    const addMcq = () => {
-        const newMcq = {
-            _id: `temp_${Date.now()}`, // Temporary ID for new MCQ
-            question: '',
-            options: ['', '', '', ''],
-            correctOption: 0,
-            subject: [], // Changed to array to match backend expectation
-            chapter: '',
-            topic: '',
-            difficulty: 'easy',
-            category: 'normal',
-            course: 'mdcat',
-            info: '',
-            explain: '',
-            imageUrl: '',
-            marks: 1
-        };
-        setFormData({
-            ...formData,
-            questions: [...formData.questions, newMcq]
-        });
+    const addMcq = async () => {
+        // If editing an existing test, add MCQ directly to the test
+        if (editingTest) {
+            const newMcq = {
+                question: '',
+                options: ['', '', '', ''],
+                correctOption: 1,
+                subject: [],
+                chapter: '',
+                topic: '',
+                difficulty: 'easy',
+                category: 'normal',
+                course: 'mdcat',
+                info: '',
+                explain: '',
+                imageUrl: '',
+                marks: 1
+            };
+
+            try {
+                setLoading(true);
+                const response = await axiosInstance.post(`/tests/${editingTest._id}/mcqs`, newMcq);
+                console.log('MCQ added to test:', response.data);
+                
+                // Update the form data with the new test data
+                const updatedTest = response.data.test;
+                setFormData({
+                    ...formData,
+                    questions: updatedTest.questions.map(q => ({
+                        _id: q.questionId._id,
+                        question: q.questionId.question,
+                        options: q.questionId.options,
+                        correctOption: q.questionId.correctOption,
+                        subject: q.questionId.subject,
+                        chapter: q.questionId.chapter,
+                        topic: q.questionId.topic,
+                        difficulty: q.questionId.difficulty,
+                        category: q.questionId.category,
+                        course: q.questionId.course,
+                        info: q.questionId.info || '',
+                        explain: q.questionId.explain || '',
+                        imageUrl: q.questionId.imageUrl || '',
+                        marks: q.marks
+                    }))
+                });
+                
+                enqueueSnackbar('MCQ added to test successfully', { variant: 'success' });
+            } catch (error) {
+                console.error('Error adding MCQ to test:', error);
+                enqueueSnackbar(error.response?.data?.error || 'Failed to add MCQ to test', { variant: 'error' });
+            } finally {
+                setLoading(false);
+            }
+        } else {
+            // For new tests, add to local form state
+            const newMcq = {
+                _id: `temp_${Date.now()}`, // Temporary ID for new MCQ
+                question: '',
+                options: ['', '', '', ''],
+                correctOption: 1,
+                subject: [], // Changed to array to match backend expectation
+                chapter: '',
+                topic: '',
+                difficulty: 'easy',
+                category: 'normal',
+                course: 'mdcat',
+                info: '',
+                explain: '',
+                imageUrl: '',
+                marks: 1
+            };
+            setFormData({
+                ...formData,
+                questions: [...formData.questions, newMcq]
+            });
+        }
     };
 
-    const updateMcq = (index, field, value) => {
+    const updateMcq = async (index, field, value) => {
         const updatedQuestions = [...formData.questions];
         if (field.startsWith('option')) {
             const optionIndex = parseInt(field.slice(-1)) - 1;
@@ -326,18 +381,56 @@ const TestManagement = () => {
         } else {
             updatedQuestions[index][field] = value;
         }
+        
         setFormData({
             ...formData,
             questions: updatedQuestions
         });
+
+        // If editing an existing test and the MCQ has a real ID (not temp), save changes immediately
+        if (editingTest && updatedQuestions[index]._id && !updatedQuestions[index]._id.toString().startsWith('temp')) {
+            try {
+                const mcqData = updatedQuestions[index];
+                await axiosInstance.put(`/series-mcqs/${mcqData._id}`, {
+                    question: mcqData.question,
+                    options: mcqData.options,
+                    correctOption: mcqData.correctOption,
+                    subject: mcqData.subject,
+                    chapter: mcqData.chapter,
+                    topic: mcqData.topic,
+                    difficulty: mcqData.difficulty,
+                    category: mcqData.category,
+                    course: mcqData.course,
+                    info: mcqData.info,
+                    explain: mcqData.explain,
+                    imageUrl: mcqData.imageUrl
+                });
+            } catch (error) {
+                console.error('Error updating MCQ:', error);
+                enqueueSnackbar('Failed to save MCQ changes', { variant: 'error' });
+            }
+        }
     };
 
-    const removeMcq = (index) => {
+    const removeMcq = async (index) => {
+        const mcqToRemove = formData.questions[index];
         const updatedQuestions = formData.questions.filter((_, i) => i !== index);
+        
         setFormData({
             ...formData,
             questions: updatedQuestions
         });
+
+        // If editing an existing test and the MCQ has a real ID (not temp), remove it from the test
+        if (editingTest && mcqToRemove._id && !mcqToRemove._id.toString().startsWith('temp')) {
+            try {
+                await axiosInstance.delete(`/tests/${editingTest._id}/mcqs/${mcqToRemove._id}`);
+                enqueueSnackbar('MCQ removed from test successfully', { variant: 'success' });
+            } catch (error) {
+                console.error('Error removing MCQ from test:', error);
+                enqueueSnackbar('Failed to remove MCQ from test', { variant: 'error' });
+            }
+        }
     };
 
     const getStatsCard = (title, value, icon, color) => (

@@ -82,7 +82,7 @@ const SeriesMcqManagement = () => {
   const [formData, setFormData] = useState({
     question: "",
     options: ["", "", "", ""],
-    correctOption: 0,
+    correctOption: 1,
     subject: [],
     chapter: "",
     topic: "",
@@ -335,7 +335,7 @@ const SeriesMcqManagement = () => {
       setFormData({
         question: "",
         options: ["", "", "", ""],
-        correctOption: 0,
+        correctOption: 1,
         subject: [],
         chapter: "",
         topic: "",
@@ -366,7 +366,7 @@ const SeriesMcqManagement = () => {
     setFormData({
       question: "",
       options: ["", "", "", ""],
-      correctOption: 0,
+      correctOption: 1,
       subject: [],
       chapter: "",
       topic: "",

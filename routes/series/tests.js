@@ -67,8 +67,8 @@ router.post('/', wrapAsync(async (req, res) => {
                     throw new Error('Invalid MCQ data: question and 4 options are required');
                 }
                 
-                if (mcqData.correctOption < 0 || mcqData.correctOption > 3) {
-                    throw new Error('Invalid correct option: must be between 0 and 3');
+                if (mcqData.correctOption < 1 || mcqData.correctOption > 4) {
+                    throw new Error('Invalid correct option: must be between 1 and 4');
                 }
                 
                 if (!mcqData.subject || !mcqData.chapter || !mcqData.topic) {
@@ -201,8 +201,8 @@ router.put('/:id', wrapAsync(async (req, res) => {
                     throw new Error('Invalid MCQ data: question and 4 options are required');
                 }
                 
-                if (mcqData.correctOption < 0 || mcqData.correctOption > 3) {
-                    throw new Error('Invalid correct option: must be between 0 and 3');
+                if (mcqData.correctOption < 1 || mcqData.correctOption > 4) {
+                    throw new Error('Invalid correct option: must be between 1 and 4');
                 }
                 
                 if (!mcqData.subject || !mcqData.chapter || !mcqData.topic) {
@@ -354,12 +354,46 @@ router.post('/:id/mcqs', wrapAsync(async (req, res) => {
             return res.status(404).json({ error: "Test not found" });
         }
 
+        // Validate MCQ data
+        if (!question || !options || !Array.isArray(options) || options.length !== 4) {
+            return res.status(400).json({ error: "Question and 4 options are required" });
+        }
+        
+        if (correctOption < 1 || correctOption > 4) {
+            return res.status(400).json({ error: "Correct option must be between 1 and 4" });
+        }
+        
+        if (!subject || !chapter || !topic) {
+            return res.status(400).json({ error: "Subject, chapter, and topic are required" });
+        }
+
+        // Normalize subjects to lowercase and validate
+        const validSubjects = ['physics', 'chemistry', 'biology', 'english', 'mathematics', 'logic', 'others'];
+        
+        // Ensure subject is always an array
+        let subjectArray = subject;
+        if (!Array.isArray(subjectArray)) {
+            subjectArray = [subjectArray];
+        }
+        
+        // Validate and normalize each subject
+        const normalizedSubjects = subjectArray.map(s => {
+            if (typeof s !== 'string') {
+                throw new Error(`Invalid subject type: ${typeof s}. Subject must be a string.`);
+            }
+            const normalized = s.toLowerCase();
+            if (!validSubjects.includes(normalized)) {
+                throw new Error(`Invalid subject: ${s}. Valid subjects are: ${validSubjects.join(', ')}`);
+            }
+            return normalized;
+        });
+
         // Create new Series MCQ
         const mcq = new SeriesMCQ({
             question,
             options,
             correctOption,
-            subject,
+            subject: normalizedSubjects,
             chapter,
             topic,
             difficulty: difficulty || 'easy',
@@ -369,7 +403,7 @@ router.post('/:id/mcqs', wrapAsync(async (req, res) => {
             explain: explain || '',
             imageUrl: imageUrl || '',
             seriesId: test.seriesId,
-            testId: test._id,
+            // Note: We don't set testId here to allow MCQs to be assigned to multiple tests
             createdBy: req.user?._id
         });
 
