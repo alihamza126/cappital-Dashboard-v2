@@ -75,19 +75,33 @@ router.post('/', wrapAsync(async (req, res) => {
                     throw new Error('Invalid MCQ data: subject, chapter, and topic are required');
                 }
                 
-                // Normalize subject to lowercase
-                const normalizedSubject = mcqData.subject.toLowerCase();
+                // Normalize subjects to lowercase and validate
                 const validSubjects = ['physics', 'chemistry', 'biology', 'english', 'mathematics', 'logic', 'others'];
-                if (!validSubjects.includes(normalizedSubject)) {
-                    throw new Error(`Invalid subject: ${mcqData.subject}. Valid subjects are: ${validSubjects.join(', ')}`);
+                
+                // Ensure subject is always an array
+                let subjectArray = mcqData.subject;
+                if (!Array.isArray(subjectArray)) {
+                    subjectArray = [subjectArray];
                 }
+                
+                // Validate and normalize each subject
+                const normalizedSubjects = subjectArray.map(s => {
+                    if (typeof s !== 'string') {
+                        throw new Error(`Invalid subject type: ${typeof s}. Subject must be a string.`);
+                    }
+                    const normalized = s.toLowerCase();
+                    if (!validSubjects.includes(normalized)) {
+                        throw new Error(`Invalid subject: ${s}. Valid subjects are: ${validSubjects.join(', ')}`);
+                    }
+                    return normalized;
+                });
                 
                 // Create new Series MCQ
                 const mcq = new SeriesMCQ({
                     question: mcqData.question,
                     options: mcqData.options,
                     correctOption: mcqData.correctOption,
-                    subject: normalizedSubject,
+                    subject: normalizedSubjects,
                     chapter: mcqData.chapter,
                     topic: mcqData.topic,
                     difficulty: mcqData.difficulty || 'easy',
@@ -195,26 +209,46 @@ router.put('/:id', wrapAsync(async (req, res) => {
                     throw new Error('Invalid MCQ data: subject, chapter, and topic are required');
                 }
                 
-                // Normalize subject to lowercase
-                const normalizedSubject = mcqData.subject.toLowerCase();
+                // Normalize subjects to lowercase and validate
                 const validSubjects = ['physics', 'chemistry', 'biology', 'english', 'mathematics', 'logic', 'others'];
-                if (!validSubjects.includes(normalizedSubject)) {
-                    throw new Error(`Invalid subject: ${mcqData.subject}. Valid subjects are: ${validSubjects.join(', ')}`);
+                
+                // Ensure subject is always an array
+                let subjectArray = mcqData.subject;
+                if (!Array.isArray(subjectArray)) {
+                    subjectArray = [subjectArray];
                 }
+                
+                // Validate and normalize each subject
+                const normalizedSubjects = subjectArray.map(s => {
+                    if (typeof s !== 'string') {
+                        throw new Error(`Invalid subject type: ${typeof s}. Subject must be a string.`);
+                    }
+                    const normalized = s.toLowerCase();
+                    if (!validSubjects.includes(normalized)) {
+                        throw new Error(`Invalid subject: ${s}. Valid subjects are: ${validSubjects.join(', ')}`);
+                    }
+                    return normalized;
+                });
                 
                 let mcq;
                 
-                if (mcqData._id && mcqData._id.toString().length === 24 && !mcqData._id.toString().startsWith('temp')) {
+                // Check if this is an existing MCQ (has valid ObjectId and exists in current test)
+                const isExistingMcq = mcqData._id && 
+                                    mcqData._id.toString().length === 24 && 
+                                    !mcqData._id.toString().startsWith('temp') &&
+                                    existingTest.questions.some(q => q.questionId.toString() === mcqData._id.toString());
+                
+                if (isExistingMcq) {
                     // Update existing MCQ
                     console.log('Updating existing MCQ:', mcqData._id);
                     mcq = await SeriesMCQ.findByIdAndUpdate(mcqData._id, {
                         question: mcqData.question,
                         options: mcqData.options,
                         correctOption: mcqData.correctOption,
-                        subject: normalizedSubject,
+                        subject: normalizedSubjects,
                         chapter: mcqData.chapter,
                         topic: mcqData.topic,
-                        difficulty: mcqData.difficulty,
+                        difficulty: mcqData.difficulty || 'easy',
                         category: mcqData.category || 'normal',
                         course: mcqData.course || 'mdcat',
                         info: mcqData.info || '',
@@ -233,7 +267,7 @@ router.put('/:id', wrapAsync(async (req, res) => {
                         question: mcqData.question,
                         options: mcqData.options,
                         correctOption: mcqData.correctOption,
-                        subject: normalizedSubject,
+                        subject: normalizedSubjects,
                         chapter: mcqData.chapter,
                         topic: mcqData.topic,
                         difficulty: mcqData.difficulty || 'easy',

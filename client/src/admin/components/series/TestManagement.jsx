@@ -194,10 +194,10 @@ const TestManagement = () => {
             if (!mcq.options || mcq.options.length !== 4 || mcq.options.some(opt => !opt)) {
                 newErrors[`mcq_${index}_options`] = 'All 4 options are required';
             }
-            if (mcq.correctOption < 0 || mcq.correctOption > 4) {
+            if (mcq.correctOption < 0 || mcq.correctOption > 3) {
                 newErrors[`mcq_${index}_correctOption`] = 'Correct option must be A, B, C, or D';
             }
-            if (!mcq.subject) {
+            if (!mcq.subject || (Array.isArray(mcq.subject) && mcq.subject.length === 0) || (!Array.isArray(mcq.subject) && !mcq.subject)) {
                 newErrors[`mcq_${index}_subject`] = 'Subject is required';
             }
             if (!mcq.chapter) {
@@ -297,11 +297,11 @@ const TestManagement = () => {
     // MCQ Management Functions
     const addMcq = () => {
         const newMcq = {
-            _id: Date.now().toString(), // Temporary ID for new MCQ
+            _id: `temp_${Date.now()}`, // Temporary ID for new MCQ
             question: '',
             options: ['', '', '', ''],
             correctOption: 0,
-            subject: '',
+            subject: [], // Changed to array to match backend expectation
             chapter: '',
             topic: '',
             difficulty: 'easy',
@@ -783,8 +783,10 @@ const TestManagement = () => {
                                                         <FormControl fullWidth error={!!errors[`mcq_${index}_subject`]}>
                                                             <InputLabel>Subject</InputLabel>
                                                             <Select
-                                                                value={mcq.subject}
+                                                                multiple
+                                                                value={Array.isArray(mcq.subject) ? mcq.subject : [mcq.subject]}
                                                                 onChange={(e) => updateMcq(index, 'subject', e.target.value)}
+                                                                renderValue={(selected) => selected.join(', ')}
                                                             >
                                                                 {subjects.map((subject) => (
                                                                     <MenuItem key={subject} value={subject}>
