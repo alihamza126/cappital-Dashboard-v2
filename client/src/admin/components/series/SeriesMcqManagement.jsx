@@ -30,6 +30,8 @@ import {
   InputAdornment,
   Tabs,
   Tab,
+  Checkbox,
+  Alert,
 } from "@mui/material"
 import {
   Add as AddIcon,
@@ -39,6 +41,7 @@ import {
   Clear as ClearIcon,
   CloudUpload,
   Image,
+  Assignment as AssignmentIcon,
 } from "@mui/icons-material"
 import { useSnackbar } from "notistack"
 import axiosInstance from "../../../baseUrl"
@@ -50,13 +53,15 @@ const SeriesMcqManagement = () => {
   const [allMcqs, setAllMcqs] = useState([])
   const [loading, setLoading] = useState(false)
   const [openDialog, setOpenDialog] = useState(false)
+  const [openAssignDialog, setOpenAssignDialog] = useState(false)
   const [editingMcq, setEditingMcq] = useState(null)
   const [series, setSeries] = useState([])
   const [tests, setTests] = useState([])
   const [selectedSeries, setSelectedSeries] = useState("")
   const [selectedTest, setSelectedTest] = useState("")
+  const [selectedMcqs, setSelectedMcqs] = useState([])
   const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(10)
+  const [rowsPerPage, setRowsPerPage] = useState(200)
   const [total, setTotal] = useState(0)
   const [filters, setFilters] = useState({
     subject: [],
@@ -152,7 +157,7 @@ const SeriesMcqManagement = () => {
     try {
       const params = new URLSearchParams({
         page: page + 1,
-        limit: 1000, // Fetch all MCQs for local filtering
+        limit: rowsPerPage,
         ...filters,
       })
 
@@ -206,6 +211,101 @@ const SeriesMcqManagement = () => {
 
     setMcqs(filtered)
     setTotal(filtered.length)
+  }
+
+  const handleSelectAllMcqs = (event) => {
+    if (event.target.checked) {
+      setSelectedMcqs(mcqs.map(mcq => mcq._id))
+    } else {
+      setSelectedMcqs([])
+    }
+  }
+
+  const handleSelectMcq = (mcqId) => {
+    setSelectedMcqs(prev => {
+      if (prev.includes(mcqId)) {
+        return prev.filter(id => id !== mcqId)
+      } else {
+        return [...prev, mcqId]
+      }
+    })
+  }
+
+  const handleOpenAssignDialog = () => {
+    if (selectedMcqs.length === 0) {
+      enqueueSnackbar("Please select MCQs to assign", { variant: "warning" })
+      return
+    }
+    setOpenAssignDialog(true)
+  }
+
+  const handleCloseAssignDialog = () => {
+    setOpenAssignDialog(false)
+  }
+
+  const handleAssignToTest = async () => {
+    if (!selectedTest) {
+      enqueueSnackbar("Please select a test", { variant: "warning" })
+      return
+    }
+
+    setLoading(true)
+    try {
+      const response = await axiosInstance.post(`/series-mcqs/assign`, {
+        mcqIds: selectedMcqs,
+        testId: selectedTest
+      })
+      
+      const { message, addedCount, totalQuestions } = response.data
+      enqueueSnackbar(message, { variant: "success" })
+      
+      if (addedCount < selectedMcqs.length) {
+        enqueueSnackbar(`${selectedMcqs.length - addedCount} MCQs were already assigned to this test`, { variant: "info" })
+      }
+      
+      setSelectedMcqs([])
+      setOpenAssignDialog(false)
+      fetchMcqs()
+    } catch (error) {
+      console.error("Error assigning MCQs:", error)
+      const errorMessage = error.response?.data?.error || "Failed to assign MCQs"
+      enqueueSnackbar(errorMessage, { variant: "error" })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleRemoveFromTest = async () => {
+    if (!selectedTest) {
+      enqueueSnackbar("Please select a test", { variant: "warning" })
+      return
+    }
+
+    if (selectedMcqs.length === 0) {
+      enqueueSnackbar("Please select MCQs to remove", { variant: "warning" })
+      return
+    }
+
+    if (window.confirm(`Are you sure you want to remove ${selectedMcqs.length} MCQs from this test?`)) {
+      setLoading(true)
+      try {
+        const response = await axiosInstance.delete(`/series-mcqs/test/${selectedTest}/mcqs`, {
+          data: { mcqIds: selectedMcqs }
+        })
+        
+        const { message, removedCount } = response.data
+        enqueueSnackbar(message, { variant: "success" })
+        
+        setSelectedMcqs([])
+        fetchMcqs()
+      } catch (error) {
+        console.error("Error removing MCQs from test:", error)
+        const errorMessage = error.response?.data?.error || "Failed to remove MCQs from test"
+        enqueueSnackbar(errorMessage, { variant: "error" })
+      } finally {
+        setLoading(false)
+      }
+    }
   }
 
   const handleOpenDialog = (mcq = null) => {
@@ -530,23 +630,50 @@ const SeriesMcqManagement = () => {
       </Card>
 
       <Box sx={{ mb: 2, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <Typography variant="h6">
-          MCQs: {mcqs.length}{" "}
-          {selectedSeries &&
-            series.find((s) => s._id === selectedSeries) &&
-            `(${series.find((s) => s._id === selectedSeries).title})`}
-          {selectedTest &&
-            tests.find((t) => t._id === selectedTest) &&
-            ` - Test: ${tests.find((t) => t._id === selectedTest).title}`}
-        </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => handleOpenDialog()}
-          disabled={!selectedSeries}
-        >
-          Add MCQ
-        </Button>
+        <Box>
+          <Typography variant="h6">
+            MCQs: {mcqs.length}{" "}
+            {selectedSeries &&
+              series.find((s) => s._id === selectedSeries) &&
+              `(${series.find((s) => s._id === selectedSeries).title})`}
+            {selectedTest &&
+              tests.find((t) => t._id === selectedTest) &&
+              ` - Test: ${tests.find((t) => t._id === selectedTest).title}`}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {selectedMcqs.length} MCQs selected
+          </Typography>
+        </Box>
+        <Box>
+          <Button
+            variant="contained"
+            startIcon={<AssignmentIcon />}
+            onClick={handleOpenAssignDialog}
+            disabled={!selectedSeries || selectedMcqs.length === 0}
+            sx={{ mr: 1 }}
+          >
+            Assign to Test
+          </Button>
+          {selectedTest && (
+            <Button
+              variant="outlined"
+              color="error"
+              onClick={handleRemoveFromTest}
+              disabled={!selectedSeries || selectedMcqs.length === 0}
+              sx={{ mr: 1 }}
+            >
+              Remove from Test
+            </Button>
+          )}
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => handleOpenDialog()}
+            disabled={!selectedSeries}
+          >
+            Add MCQ
+          </Button>
+        </Box>
       </Box>
 
       {!selectedSeries ? (
@@ -562,6 +689,13 @@ const SeriesMcqManagement = () => {
           <Table>
             <TableHead>
               <TableRow>
+                <TableCell padding="checkbox">
+                  <Checkbox
+                    indeterminate={selectedMcqs.length > 0 && selectedMcqs.length < mcqs.length}
+                    checked={mcqs.length > 0 && selectedMcqs.length === mcqs.length}
+                    onChange={handleSelectAllMcqs}
+                  />
+                </TableCell>
                 <TableCell>Question</TableCell>
                 <TableCell>Subject</TableCell>
                 <TableCell>Chapter</TableCell>
@@ -576,19 +710,29 @@ const SeriesMcqManagement = () => {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={9} sx={{ textAlign: "center", py: 4 }}>
+                  <TableCell colSpan={10} sx={{ textAlign: "center", py: 4 }}>
                     <Typography>Loading MCQs...</Typography>
                   </TableCell>
                 </TableRow>
               ) : mcqs.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} sx={{ textAlign: "center", py: 4 }}>
+                  <TableCell colSpan={10} sx={{ textAlign: "center", py: 4 }}>
                     <Typography color="text.secondary">No MCQs found for this series</Typography>
                   </TableCell>
                 </TableRow>
               ) : (
                 mcqs?.map((mcq) => (
-                  <TableRow key={mcq._id}>
+                  <TableRow 
+                    key={mcq._id}
+                    selected={selectedMcqs.includes(mcq._id)}
+                    hover
+                  >
+                    <TableCell padding="checkbox">
+                      <Checkbox
+                        checked={selectedMcqs.includes(mcq._id)}
+                        onChange={() => handleSelectMcq(mcq._id)}
+                      />
+                    </TableCell>
                     <TableCell>
                       <Typography variant="body2" noWrap sx={{ maxWidth: 200 }}>
                         {mcq.question}
@@ -661,7 +805,7 @@ const SeriesMcqManagement = () => {
             </TableBody>
           </Table>
           <TablePagination
-            rowsPerPageOptions={[5, 10, 25]}
+            rowsPerPageOptions={[50, 100, 200]}
             component="div"
             count={total}
             rowsPerPage={rowsPerPage}
@@ -954,6 +1098,47 @@ const SeriesMcqManagement = () => {
           <Button onClick={handleCloseDialog}>Cancel</Button>
           <Button onClick={handleSubmit} variant="contained" disabled={loading}>
             {editingMcq ? "Update" : "Create"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Assignment Dialog */}
+      <Dialog open={openAssignDialog} onClose={handleCloseAssignDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>Assign MCQs to Test</DialogTitle>
+        <DialogContent>
+          <Box sx={{ mt: 2 }}>
+            <Typography gutterBottom>
+              Selected MCQs: {selectedMcqs.length}
+            </Typography>
+            {selectedTest && (
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Target Test: {tests.find(t => t._id === selectedTest)?.title}
+              </Typography>
+            )}
+            <FormControl fullWidth sx={{ mt: 2 }}>
+              <InputLabel>Select Test</InputLabel>
+              <Select
+                value={selectedTest}
+                onChange={(e) => setSelectedTest(e.target.value)}
+                label="Select Test"
+              >
+                {tests?.map((test) => (
+                  <MenuItem key={test._id} value={test._id}>
+                    {test.title} ({test.questions?.length || 0} questions)
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseAssignDialog}>Cancel</Button>
+          <Button 
+            onClick={handleAssignToTest} 
+            variant="contained" 
+            disabled={loading || !selectedTest}
+          >
+            Assign
           </Button>
         </DialogActions>
       </Dialog>

@@ -8,7 +8,7 @@ const Series = require('../../models/series/series');
 // Get all MCQs for a series
 router.get('/series/:seriesId', wrapAsync(async (req, res) => {
     try {
-        const { page = 1, limit = 10, subject, chapter, topic, difficulty } = req.query;
+        const { page = 1, limit = 200, subject, chapter, topic, difficulty } = req.query;
         
         let query = { seriesId: req.params.seriesId };
         
@@ -51,13 +51,12 @@ router.get('/series/:seriesId', wrapAsync(async (req, res) => {
 // Get all MCQs for a specific test
 router.get('/test/:testId', wrapAsync(async (req, res) => {
     try {
-        const { page = 1, limit = 10, subject, chapter, topic, difficulty } = req.query;
+        const { page = 1, limit = 200, subject, chapter, topic, difficulty } = req.query;
         
         let query = { testId: req.params.testId };
         
         // Apply filters
         if (subject) {
-            // Handle subject filtering for arrays
             if (Array.isArray(subject)) {
                 query.subject = { $in: subject };
             } else {
@@ -200,79 +199,20 @@ router.post('/', wrapAsync(async (req, res) => {
 // Update MCQ
 router.put('/:id', wrapAsync(async (req, res) => {
     try {
-        const {
-            question,
-            options,
-            correctOption,
-            subject,
-            chapter,
-            topic,
-            difficulty,
-            category,
-            course,
-            info,
-            explain,
-            imageUrl,
-            questionImg,
-            testId
-        } = req.body;
-
-        // Verify test exists if testId is provided
-        if (testId) {
-            const test = await Test.findById(testId);
-            if (!test) {
-                return res.status(404).json({ error: "Test not found" });
-            }
-        }
-
-        // Normalize subjects to lowercase and validate
-        const validSubjects = ['physics', 'chemistry', 'biology', 'english', 'mathematics', 'logic', 'others'];
-        
-        // Ensure subject is always an array
-        let subjectArray = subject;
-        if (!Array.isArray(subject)) {
-            subjectArray = [subject];
-        }
-        
-        // Validate and normalize each subject
-        const normalizedSubjects = subjectArray.map(s => {
-            if (typeof s !== 'string') {
-                throw new Error(`Invalid subject type: ${typeof s}. Subject must be a string.`);
-            }
-            const normalized = s.toLowerCase();
-            if (!validSubjects.includes(normalized)) {
-                throw new Error(`Invalid subject: ${s}. Valid subjects are: ${validSubjects.join(', ')}`);
-            }
-            return normalized;
-        });
-
-        const mcq = await SeriesMCQ.findByIdAndUpdate(
-            req.params.id,
-            {
-                question,
-                options,
-                correctOption,
-                subject: normalizedSubjects,
-                chapter,
-                topic,
-                difficulty,
-                category,
-                course,
-                info,
-                explain,
-                imageUrl,
-                questionImg,
-                testId
-            },
-            { new: true }
-        ).populate('testId', 'title')
-         .populate('createdBy', 'username');
-
+        const mcq = await SeriesMCQ.findById(req.params.id);
         if (!mcq) {
             return res.status(404).json({ error: "MCQ not found" });
         }
 
-        res.status(200).json({ message: "MCQ updated successfully", mcq });
+        // Update fields
+        Object.assign(mcq, req.body);
+        await mcq.save();
+
+        const updatedMcq = await SeriesMCQ.findById(mcq._id)
+            .populate('testId', 'title')
+            .populate('createdBy', 'username');
+
+        res.status(200).json({ message: "MCQ updated successfully", mcq: updatedMcq });
     } catch (error) {
         console.log('Error updating MCQ:', error);
         res.status(500).json({ error: "Failed to update MCQ" });
@@ -286,7 +226,6 @@ router.delete('/:id', wrapAsync(async (req, res) => {
         if (!mcq) {
             return res.status(404).json({ error: "MCQ not found" });
         }
-
         res.status(200).json({ message: "MCQ deleted successfully" });
     } catch (error) {
         console.log('Error deleting MCQ:', error);
@@ -294,29 +233,94 @@ router.delete('/:id', wrapAsync(async (req, res) => {
     }
 }));
 
-// Get MCQ statistics for a series
-router.get('/series/:seriesId/stats', wrapAsync(async (req, res) => {
+// Bulk assign MCQs to test
+router.post('/assign', wrapAsync(async (req, res) => {
     try {
-        const totalMcqs = await SeriesMCQ.countDocuments({ seriesId: req.params.seriesId });
-        
-        const subjectStats = await SeriesMCQ.aggregate([
-            { $match: { seriesId: mongoose.Types.ObjectId(req.params.seriesId) } },
-            { $group: { _id: '$subject', count: { $sum: 1 } } }
-        ]);
-        
-        const difficultyStats = await SeriesMCQ.aggregate([
-            { $match: { seriesId: mongoose.Types.ObjectId(req.params.seriesId) } },
-            { $group: { _id: '$difficulty', count: { $sum: 1 } } }
-        ]);
+        const { mcqIds, testId } = req.body;
 
-        res.status(200).json({
-            totalMcqs,
-            subjectStats,
-            difficultyStats
+        if (!Array.isArray(mcqIds) || mcqIds.length === 0) {
+            return res.status(400).json({ error: "No MCQs selected" });
+        }
+
+        // Verify test exists
+        const test = await Test.findById(testId);
+        if (!test) {
+            return res.status(404).json({ error: "Test not found" });
+        }
+
+        // Get existing question IDs in the test to avoid duplicates
+        const existingQuestionIds = test.questions.map(q => q.questionId.toString());
+
+        // Filter out MCQs that are already in the test
+        const newMcqIds = mcqIds.filter(mcqId => !existingQuestionIds.includes(mcqId));
+
+        if (newMcqIds.length === 0) {
+            return res.status(400).json({ error: "All selected MCQs are already assigned to this test" });
+        }
+
+        // Add new MCQs to test's questions array
+        const newQuestions = newMcqIds.map(mcqId => ({
+            questionId: mcqId,
+            marks: 1 // Default marks
+        }));
+
+        test.questions.push(...newQuestions);
+        await test.save();
+
+        // Update all selected MCQs to point to this test
+        await SeriesMCQ.updateMany(
+            { _id: { $in: mcqIds } },
+            { $set: { testId: testId } }
+        );
+
+        res.status(200).json({ 
+            message: `${newMcqIds.length} MCQs assigned successfully to test`,
+            addedCount: newMcqIds.length,
+            totalQuestions: test.questions.length
         });
     } catch (error) {
-        console.log('Error fetching MCQ stats:', error);
-        res.status(500).json({ error: "Failed to fetch statistics" });
+        console.log('Error assigning MCQs:', error);
+        res.status(500).json({ error: "Failed to assign MCQs" });
+    }
+}));
+
+// Remove MCQs from test
+router.delete('/test/:testId/mcqs', wrapAsync(async (req, res) => {
+    try {
+        const { mcqIds } = req.body;
+        const { testId } = req.params;
+
+        if (!Array.isArray(mcqIds) || mcqIds.length === 0) {
+            return res.status(400).json({ error: "No MCQs selected for removal" });
+        }
+
+        // Verify test exists
+        const test = await Test.findById(testId);
+        if (!test) {
+            return res.status(404).json({ error: "Test not found" });
+        }
+
+        // Remove MCQs from test's questions array
+        const initialCount = test.questions.length;
+        test.questions = test.questions.filter(q => !mcqIds.includes(q.questionId.toString()));
+        await test.save();
+
+        const removedCount = initialCount - test.questions.length;
+
+        // Update MCQs to remove testId reference
+        await SeriesMCQ.updateMany(
+            { _id: { $in: mcqIds } },
+            { $unset: { testId: "" } }
+        );
+
+        res.status(200).json({ 
+            message: `${removedCount} MCQs removed from test`,
+            removedCount,
+            totalQuestions: test.questions.length
+        });
+    } catch (error) {
+        console.log('Error removing MCQs from test:', error);
+        res.status(500).json({ error: "Failed to remove MCQs from test" });
     }
 }));
 

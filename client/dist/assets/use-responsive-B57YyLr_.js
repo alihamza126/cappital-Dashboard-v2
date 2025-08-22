@@ -1,0 +1,1 @@
+import{u as p,a$ as o}from"./@mui-Bw2wRnxu.js";function d(i,e,s){const n=p(),t=o(n.breakpoints.up(e)),r=o(n.breakpoints.down(e)),u=o(n.breakpoints.between(e,s)),a=o(n.breakpoints.only(e));return i==="up"?t:i==="down"?r:i==="between"?u:a}export{d as u};

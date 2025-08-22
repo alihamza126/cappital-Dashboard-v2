@@ -27,6 +27,8 @@ const reportSchema = new mongoose.Schema({
         type: mongoose.Schema.ObjectId,
         ref: 'user'
     }
+}, { 
+    timestamps: true // This adds createdAt and updatedAt fields
 });
 
 const Report = mongoose.model('Report', reportSchema);
