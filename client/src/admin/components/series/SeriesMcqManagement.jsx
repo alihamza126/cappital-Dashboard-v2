@@ -848,8 +848,8 @@ const SeriesMcqManagement = () => {
                     InputProps={{
                       endAdornment: (
                         <Chip
-                          label={formData.correctOption === index ? "Correct" : ""}
-                          color={formData.correctOption === index ? "success" : "default"}
+                          label={formData.correctOption === (index + 1) ? "Correct" : ""}
+                          color={formData.correctOption === (index + 1) ? "success" : "default"}
                           size="small"
                         />
                       ),
@@ -867,7 +867,7 @@ const SeriesMcqManagement = () => {
                     label="Correct Option"
                   >
                     {formData?.options?.map((_, index) => (
-                      <MenuItem key={index} value={index}>
+                      <MenuItem key={index} value={index + 1}>
                         Option {index + 1}
                       </MenuItem>
                     ))}

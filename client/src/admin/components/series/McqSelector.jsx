@@ -296,10 +296,10 @@ const McqSelector = ({ open, onClose, onSelect, selectedMcqs = [], subjects = []
                                                             <Typography 
                                                                 key={optIndex} 
                                                                 variant="caption" 
-                                                                color={optIndex === mcq.correctOption ? 'success.main' : 'text.secondary'}
+                                                                color={(optIndex + 1) === mcq.correctOption ? 'success.main' : 'text.secondary'}
                                                                 sx={{ 
                                                                     display: 'block',
-                                                                    fontWeight: optIndex === mcq.correctOption ? 'bold' : 'normal'
+                                                                    fontWeight: (optIndex + 1) === mcq.correctOption ? 'bold' : 'normal'
                                                                 }}
                                                             >
                                                                 {String.fromCharCode(65 + optIndex)}. {option}
