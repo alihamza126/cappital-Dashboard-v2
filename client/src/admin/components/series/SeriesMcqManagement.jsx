@@ -109,7 +109,7 @@ const SeriesMcqManagement = () => {
       setAllMcqs([])
       setTotal(0)
     }
-  }, [selectedSeries, page, rowsPerPage])
+  }, [selectedSeries, selectedTest, page, rowsPerPage])
 
   useEffect(() => {
     if (selectedSeries) {
@@ -122,7 +122,7 @@ const SeriesMcqManagement = () => {
 
   useEffect(() => {
     applyFilters()
-  }, [filters, searchTerm, allMcqs, selectedTest])
+  }, [filters, searchTerm, allMcqs])
 
   const fetchSeries = async () => {
     try {
@@ -161,6 +161,11 @@ const SeriesMcqManagement = () => {
         ...filters,
       })
 
+      // Add testId to params if a test is selected
+      if (selectedTest) {
+        params.append('testId', selectedTest)
+      }
+
       const response = await axiosInstance.get(`/series-mcqs/series/${selectedSeries}?${params}`)
       setMcqs(response.data.mcqs || [])
       setAllMcqs(response.data.mcqs || [])
@@ -178,11 +183,6 @@ const SeriesMcqManagement = () => {
 
   const applyFilters = () => {
     let filtered = [...allMcqs]
-
-    // Filter by selected test (local filtering)
-    if (selectedTest) {
-      filtered = filtered.filter((mcq) => mcq.testId?._id === selectedTest)
-    }
 
     if (searchTerm) {
       filtered = filtered.filter(

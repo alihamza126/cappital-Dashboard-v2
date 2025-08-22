@@ -8,7 +8,7 @@ const Series = require('../../models/series/series');
 // Get all MCQs for a series
 router.get('/series/:seriesId', wrapAsync(async (req, res) => {
     try {
-        const { page = 1, limit = 200, subject, chapter, topic, difficulty } = req.query;
+        const { page = 1, limit = 200, subject, chapter, topic, difficulty, testId } = req.query;
         
         let query = { seriesId: req.params.seriesId };
         
@@ -24,6 +24,16 @@ router.get('/series/:seriesId', wrapAsync(async (req, res) => {
         if (chapter) query.chapter = { $regex: chapter, $options: 'i' };
         if (topic) query.topic = { $regex: topic, $options: 'i' };
         if (difficulty) query.difficulty = difficulty;
+        
+        // If testId is provided, filter MCQs that are assigned to this test
+        if (testId) {
+            // Find the test and get its question IDs
+            const test = await Test.findById(testId);
+            if (test) {
+                const questionIds = test.questions.map(q => q.questionId);
+                query._id = { $in: questionIds };
+            }
+        }
         
         const skip = (page - 1) * limit;
         
@@ -48,12 +58,20 @@ router.get('/series/:seriesId', wrapAsync(async (req, res) => {
     }
 }));
 
-// Get all MCQs for a specific test
+// Get all MCQs for a specific test (using the Test's questions array)
 router.get('/test/:testId', wrapAsync(async (req, res) => {
     try {
         const { page = 1, limit = 200, subject, chapter, topic, difficulty } = req.query;
         
-        let query = { testId: req.params.testId };
+        // Find the test and get its question IDs
+        const test = await Test.findById(req.params.testId);
+        if (!test) {
+            return res.status(404).json({ error: "Test not found" });
+        }
+        
+        const questionIds = test.questions.map(q => q.questionId);
+        
+        let query = { _id: { $in: questionIds } };
         
         // Apply filters
         if (subject) {
@@ -267,11 +285,10 @@ router.post('/assign', wrapAsync(async (req, res) => {
         test.questions.push(...newQuestions);
         await test.save();
 
-        // Update all selected MCQs to point to this test
-        await SeriesMCQ.updateMany(
-            { _id: { $in: mcqIds } },
-            { $set: { testId: testId } }
-        );
+        // Note: We don't update the testId field in SeriesMCQ anymore
+        // since MCQs can be assigned to multiple tests through the Test's questions array
+        // The testId field in SeriesMCQ is kept for backward compatibility
+        // but the primary relationship is now through the Test's questions array
 
         res.status(200).json({ 
             message: `${newMcqIds.length} MCQs assigned successfully to test`,
@@ -307,11 +324,10 @@ router.delete('/test/:testId/mcqs', wrapAsync(async (req, res) => {
 
         const removedCount = initialCount - test.questions.length;
 
-        // Update MCQs to remove testId reference
-        await SeriesMCQ.updateMany(
-            { _id: { $in: mcqIds } },
-            { $unset: { testId: "" } }
-        );
+        // Note: We don't update the testId field in SeriesMCQ anymore
+        // since MCQs can be assigned to multiple tests through the Test's questions array
+        // The testId field in SeriesMCQ is kept for backward compatibility
+        // but the primary relationship is now through the Test's questions array
 
         res.status(200).json({ 
             message: `${removedCount} MCQs removed from test`,
